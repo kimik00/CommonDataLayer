@@ -32,3 +32,6 @@ dependencies:
 - name: postgresql
   version: "9.4.0"
   repository: "https://charts.bitnami.com/bitnami"
+- name: victoria-metrics-cluster
+  version: "0.6.4"
+  repository: "https://victoriametrics.github.io/helm-charts/"

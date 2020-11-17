@@ -57,14 +57,16 @@ services:
       - ./docker-volume/postgres1/db:/var/lib/postgresql/data
       - ./docker-volume/postgres1/init:/docker-entrypoint-initdb.d
 
+  victoria_metrics1:
+    image: victoriametrics/victoria-metrics:latest
+    ports:
+      - "8428:8428"
+    volumes:
+    - ./docker-volume/victoria_metrics1/db:/victoria-metrics-data
+
   schema_registry1:
-    image: schema_registry:latest
-    build:
-      context: ../..
-      dockerfile: Dockerfile
-      args:
-        - BIN=schema_registry
-    command: /bin/schema_registry
+    image: cdl-schema-registry:latest
+    command: "/bin/schema-registry"
     ports:
       - "50101:50101"
     environment:
@@ -81,13 +83,8 @@ services:
       - kafka1
 
   data_router1:
-    image: data_router:latest
-    build:
-      context: ../..
-      dockerfile: Dockerfile
-      args:
-        - BIN=data_router
-    command: /bin/data_router
+    image: cdl-data-router:latest
+    command: "/bin/data-router"
     environment:
       INPUT_ADDR: "amqp://guest:guest@rabbit1:5672/%2f"
       INPUT_QUEUE: "cdl.data.input"
@@ -102,13 +99,8 @@ services:
       - schema_registry1
 
   postgres_command1:
-    image: command_service:latest
-    build:
-      context: ../..
-      dockerfile: Dockerfile
-      args:
-        - BIN=command_service
-    command: "/bin/command_service postgres"
+    image: cdl-command-service:latest
+    command: "/bin/command-service postgres"
     environment:
       KAFKA_INPUT_GROUP_ID: "postgres_command"
       KAFKA_INPUT_BROKERS: "kafka1:9093"
@@ -120,3 +112,34 @@ services:
     depends_on:
       - postgres1
       - data_router1
+
+  vm_command1:
+    image: cdl-command-service:latest
+    command: "/bin/command-service victoria-metrics"
+    environment:
+      KAFKA_INPUT_GROUP_ID: "vm_command"
+      KAFKA_INPUT_BROKERS: "kafka1:9093"
+      KAFKA_INPUT_TOPIC: "cdl.timeseries.input"
+      VICTORIA_METRICS_OUTPUT_URL: "http://victoria_metrics1:8428"
+      REPORT_BROKER: "kafka1:9093"
+      REPORT_TOPIC: "cdl.reports"
+      RUST_LOG: info,command_service=trace
+
+  postgres_query1:
+    image: cdl-query-service:latest
+    command: "/bin/query-service postgres"
+    ports:
+      - "50102:50102"
+    environment:
+      POSTGRES_QUERY_URL: "postgresql://postgres:1234@postgres1:5432/postgres"
+      INPUT_PORT: 50102
+
+  query_router1:
+    image: cdl-query-router:latest
+    command: "/bin/query-router"
+    ports:
+      - "50103:50103"
+    environment:
+      CACHE_CAPACITY: 1024
+      INPUT_PORT: 50103
+      SCHEMA_REGISTRY_ADDR: "http://schema_registry1:50101"

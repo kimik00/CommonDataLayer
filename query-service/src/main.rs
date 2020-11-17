@@ -15,9 +15,7 @@ pub struct Config {
 
 #[derive(StructOpt)]
 pub enum ConfigType {
-    #[structopt(flatten)]
-    Psql(query_service::psql::PsqlConfig),
-    #[structopt(flatten)]
+    Postgres(query_service::psql::PsqlConfig),
     Sled(query_service::ds::DsConfig),
 }
 
@@ -38,7 +36,7 @@ async fn main() -> anyhow::Result<()> {
     metrics::serve();
 
     match config.inner {
-        ConfigType::Psql(psql_config) => {
+        ConfigType::Postgres(psql_config) => {
             spawn_server(
                 query_service::psql::PsqlQuery::load(psql_config).await?,
                 config.input_port,
