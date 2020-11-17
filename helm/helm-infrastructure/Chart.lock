@@ -8,5 +8,8 @@ dependencies:
 - name: postgresql
   repository: https://charts.bitnami.com/bitnami
   version: 9.4.0
-digest: sha256:1ac8f893e413758a6f6d6591a133cfe2ae1f2401a83c128b61a8bbc51b600b62
-generated: "2020-09-04T16:04:53.008265522+02:00"
+- name: victoria-metrics-cluster
+  repository: https://victoriametrics.github.io/helm-charts/
+  version: 0.6.4
+digest: sha256:60a80986a66bbce4bed55533a7f9bfd0d514e0fa164515283e2387b51ac025e4
+generated: "2020-11-18T13:11:57.594666+01:00"

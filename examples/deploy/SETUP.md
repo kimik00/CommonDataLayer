@@ -56,8 +56,12 @@ For command line it's best to refer to your OS package manager (`homebrew` on OS
 `psql -U postgres --password -h localhost`
 the password is `1234`
 
+### VictoriaMetrics
+
+You can query VM over it's rest endpoints at [localhost:8428](http://localhost:8428)
+
 ### Schema registry
-Schema registry can be either accessed via [gRPC](schema-registry/proto/registry.proto), or via `cdl-cli`. Using `cdl-cli` will require presence of rust compiler on your local machine.
+Schema registry can be either accessed via [gRPC](../../schema-registry/proto/registry.proto), or via `cdl-cli`. Using `cdl-cli` will require presence of rust compiler on your local machine.
 Tips on how to install rust are available on [rustup website](https://rustup.rs/).
 
 From main directory of this project you can run `cdl-cli` via:
@@ -76,3 +80,11 @@ eg.
 
 * Getting all schemas
 > `cargo run -p cdl-cli -- --registry-addr "http://localhost:50101" schema names`
+
+### Query service
+
+We can query postgres for data on [localhost:50102](http://localhost:50102) via gRPC ([proto file](../../query-service/proto/query.proto))
+
+### Query router
+
+Available at [localhost:50103](http://localhost:50103) via REST API. No JSON API documentation yet, please refer to source code.

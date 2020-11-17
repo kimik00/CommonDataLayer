@@ -22,6 +22,14 @@ ENV=PROD DOCKER_BUILDKIT=1 ./build.sh
 First command will change docker daemon we're communicating with to docker inside minikube. From now on any docker command run from current shell will be executed inside minikube docker daemon. To connect to your standard docker daemon just start a new shell.
 Second command builds docker image, it may take some time first time you build the image. You can change `ENV=PROD` to `ENV=DEV` if you want shorter build time(in cost of less performant output).
 
+## Pull helm dependencies
+
+```bash
+helm dependency update helm-infrastructure/
+helm dependency update helm-infrastructure-druid/
+helm dependency update cdl/
+```
+
 ## Spin up infrastructure services
 To start necessary infrastructure(not necessary if you've deployed infrastructure yourself/you want to connect to services on our azure cluster):
 

@@ -1,3 +1,4 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,7 +8,7 @@ metadata:
     repository.type: document
     repository.name: postgres
 spec:
-  replicas: {{ .Values.commandServiceReplicaCount }}
+  replicas: {{ .Values.commandService.replicaCount }}
   selector:
     matchLabels:
       app: {{ .Release.Name }}-postgres-command-service
@@ -31,13 +32,13 @@ spec:
         - name: KAFKA_INPUT_BROKERS
           value: {{ .Values.global.kafkaBrokers }}
         - name: KAFKA_INPUT_GROUP_ID
-          value: "cdl-postgres-command-service"   
+          value: "cdl-postgres-command-service"
         - name: KAFKA_INPUT_TOPIC
           value: {{ .Values.inputTopic }}
         - name: POSTGRES_OUTPUT_URL
-          value: {{ .Values.postgresConnectionString }}    
+          value: {{ .Values.postgresConnectionString }}
         - name: RUST_LOG
-          value: "info,{{ .Values.commandService.bin }}=debug" 
+          value: "info,{{ .Values.commandService.bin }}=debug"
         - name: REPORT_BROKER
           value: {{ .Values.global.kafkaBrokers }}
         - name: REPORT_TOPIC
@@ -45,6 +46,40 @@ spec:
         ports:
         - containerPort: 51805
       imagePullSecrets:
-      - name: {{ .Values.global.cdlImagePullSecrets }} 
+      - name: {{ .Values.global.cdlImagePullSecrets }}
 
-
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-postgres-query-service
+  labels:
+    app: {{ .Release.Name }}-postgres-query-service
+    repository.type: document
+    repository.name: postgres
+spec:
+  replicas: {{ .Values.queryService.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-postgres-query-service
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-postgres-query-service
+        repository.name: postgres
+        repository.type: document
+    spec:
+      containers:
+      - name: cdl-postgres-query-service
+        image: "{{ .Values.global.imageRepositoryPath }}{{ .Values.queryService.image }}:{{ .Values.global.imageVersion }}"
+        imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+        command: ["/bin/{{ .Values.queryService.bin }}","postgres"]
+        env:
+          - name: INPUT_PORT
+            value: {{ .Values.queryService.inputPort }}
+          - name: POSTGRES_QUERY_URL
+            value: {{ .Values.postgresConnectionString }}
+          - name: RUST_LOG
+            value: "info,{{ .Values.queryService.bin }}=debug"
+      imagePullSecrets:
+      - name: {{ .Values.global.cdlImagePullSecrets }}

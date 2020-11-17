@@ -35,16 +35,21 @@ documentStorage:
   bin: document-storage
 
 postgres-document:
-  commandServiceReplicaCount: 1
-  postgresDbReplicaCount: 1
   postgresConnectionString: "postgres://postgres:CHANGEME@infrastructure-postgresql/CDL"
+  postgresDbReplicaCount: 0
   inputTopic: cdl.document.data
   commandService:
     image: cld-command-service
     bin: command-service
+    replicaCount: 1
+  queryService:
+    image: cdl-query-service
+    bin: query-service
+    inputPort: 50102
+    replicaCount: 1
 
 sled-document:
-  replicaCommandCount: 1
+  replicaCommandCount: 0
   replicaDbCount: 1
   maxDbSize: 3Gi
   storageClass: standard
@@ -60,7 +65,7 @@ sled-document:
     bin: command-service
 
 druid-timeseries:
-  replicaCommandCount: 1
+  replicaCommandCount: 0
   inputTopic: cdl.timeseries.data
   outputTopic: cdl.timeseries.generic-druid
   commandService:

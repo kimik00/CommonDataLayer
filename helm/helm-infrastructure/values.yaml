@@ -105,3 +105,23 @@ postgresql:
   service:
     type: NodePort
     nodePort: 32000
+
+vmselect:
+  replicaCount: 2
+  cacheMountPath: /cache
+  service:
+    servicePort: 8481
+    type: ClusterIP
+
+vminsert:
+  replicaCount: 2
+  service:
+    servicePort: 8480
+    type: ClusterIP
+
+vmstorage:
+  replicaCount: 2
+  service:
+    servicePort: 8482
+    vminsertPort: 8400
+    vmselectPort: 8401

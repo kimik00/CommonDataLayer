@@ -33,13 +33,18 @@ documentStorage:
   bin: document-storage
 
 postgres-document:
-  commandServiceReplicaCount: 1
   postgresDbReplicaCount: 0
   postgresConnectionString: "postgres://postgres:postgres@10.1.1.5/cdldb"
   inputTopic: cdl.document.data
   commandService:
     image: cld-command-service
     bin: command-service
+    replicaCount: 1
+  queryService:
+    image: cdl-query-service
+    bin: query-service
+    inputPort: 50102
+    replicaCount: 1
 
 sled-document:
   replicaCommandCount: 0
