@@ -1,5 +1,4 @@
 use anyhow::Context;
-use futures_util::stream::StreamExt;
 use log::error;
 use lru_cache::LruCache;
 use schema_registry::{connect_to_registry, rpc::schema::Id};
@@ -10,6 +9,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 use tokio::pin;
+use tokio::stream::StreamExt;
 use utils::{
     abort_on_poison,
     message_types::{CommandServiceInsertMessage, DataRouterInputData},
@@ -39,17 +39,22 @@ async fn main() -> anyhow::Result<()> {
     let config = Arc::new(envy::from_env::<Config>().context("Env vars not set correctly")?);
     metrics::serve();
 
-    let consumer =
+    let rabbit_consumer =
         CommonConsumer::new_rabbit(&config.input_addr, RABBIT_CONSUMER_TAG, &config.input_queue)
             .await?;
+    let rest_consumer = CommonConsumer::new_rest().await?;
     let producer = Arc::new(
         CommonPublisher::new_kafka(&config.kafka_brokers)
             .await
             .unwrap(),
     );
     let cache = Arc::new(Mutex::new(LruCache::new(config.cache_capacity)));
-    let consumer = consumer.leak();
-    let message_stream = consumer.consume().await;
+    let rabbit_consumer = rabbit_consumer.leak();
+    let rest_consumer = rest_consumer.leak();
+    let message_stream = rabbit_consumer
+        .consume()
+        .await
+        .merge(rest_consumer.consume().await);
     pin!(message_stream);
     while let Some(message) = message_stream.next().await {
         match message {

@@ -67,3 +67,19 @@ impl CommunicationMessage for RabbitCommunicationMessage {
             .await?)
     }
 }
+
+pub struct RestCommunicationMessage {
+    pub(super) body: String,
+}
+#[async_trait]
+impl CommunicationMessage for RestCommunicationMessage {
+    fn key(&self) -> CommunicationResult<&str> {
+        Ok("")
+    }
+    fn payload(&self) -> CommunicationResult<&str> {
+        Ok(&self.body)
+    }
+    async fn ack(&self) -> CommunicationResult<()> {
+        Ok(())
+    }
+}
