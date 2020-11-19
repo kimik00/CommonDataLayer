@@ -21,5 +21,10 @@
 **/obj
 **/secrets.dev.yaml
 **/values.dev.yaml
+**/examples
+**/helm
+**/docs
+**/.github
+**/target
 README.md
-target
+
