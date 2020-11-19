@@ -65,12 +65,7 @@ services:
     - ./docker-volume/victoria_metrics1/db:/victoria-metrics-data
 
   schema_registry1:
-    image: schema_registry:latest
-    build:
-      context: ../..
-      dockerfile: Dockerfile
-      args:
-        - BIN=schema-registry
+    image: cdl-schema-registry:latest
     command: "/bin/schema-registry"
     ports:
       - "50101:50101"
@@ -88,12 +83,7 @@ services:
       - kafka1
 
   data_router1:
-    image: data_router:latest
-    build:
-      context: ../..
-      dockerfile: Dockerfile
-      args:
-        - BIN=data-router
+    image: cdl-data-router:latest
     command: "/bin/data-router"
     environment:
       INPUT_ADDR: "amqp://guest:guest@rabbit1:5672/%2f"
@@ -109,12 +99,7 @@ services:
       - schema_registry1
 
   postgres_command1:
-    image: command_service:latest
-    build:
-      context: ../..
-      dockerfile: Dockerfile
-      args:
-        - BIN=command-service
+    image: cdl-command-service:latest
     command: "/bin/command-service postgres"
     environment:
       KAFKA_INPUT_GROUP_ID: "postgres_command"
@@ -129,12 +114,7 @@ services:
       - data_router1
 
   vm_command1:
-    image: command_service:latest
-    build:
-      context: ../..
-      dockerfile: Dockerfile
-      args:
-        - BIN=command-service
+    image: cdl-command-service:latest
     command: "/bin/command-service victoria-metrics"
     environment:
       KAFKA_INPUT_GROUP_ID: "vm_command"
@@ -146,12 +126,7 @@ services:
       RUST_LOG: info,command_service=trace
 
   postgres_query1:
-    image: query_service:latest
-    build:
-      context: ../..
-      dockerfile: Dockerfile
-      args:
-        - BIN=query-service
+    image: cdl-query-service:latest
     command: "/bin/query-service postgres"
     ports:
       - "50102:50102"
@@ -160,12 +135,7 @@ services:
       INPUT_PORT: 50102
 
   query_router1:
-    image: query_router:latest
-    build:
-      context: ../..
-      dockerfile: Dockerfile
-      args:
-        - BIN=query-router
+    image: cdl-query-router:latest
     command: "/bin/query-router"
     ports:
       - "50103:50103"

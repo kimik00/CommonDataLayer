@@ -55,16 +55,8 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     LIB_LDFLAGS=-L/usr/lib/x86_64-linux-gnu CFLAGS=-I/usr/local/musl/include CC=musl-gcc CXX=g++ \
     cargo build $CARGO_ARGS --workspace $FEATURE_FLAGS && \
     mkdir output && \
-    bash -c "cp target/x86_64-unknown-linux-musl/$CARGO_PROFILE/$BIN output/"
+    bash -c "find target/x86_64-unknown-linux-musl/$CARGO_PROFILE -type f -executable | xargs -I{} cp {} output/"
 
 RUN if [ "$ENV" != "DEV" ]; \
     then for f in output/*; do strip $f; done; fi
 
-# -----------------
-# Final Stage
-# -----------------
-
-FROM alpine
-
-COPY --from=cargo-build /usr/src/cdl/output/* /bin/
-COPY benchmarking/sample_json sample_json/

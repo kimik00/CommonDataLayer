@@ -11,9 +11,12 @@ array=( data-router command-service query-router query-service leader-elector sc
 # shellcheck disable=SC2034
 DOCKER_BUILDKIT=1
 
+
+docker build -t workspace:local --build-arg ENV="${ENV:-PROD}" . -f workspace.Dockerfile
+
 for i in "${array[@]}"
 do
-	docker build -t "${CDL_REPOSITORY_PATH}"cdl-"${i}":"${CDL_VERSION:-latest}" --build-arg BIN="${i}" --build-arg ENV="${ENV:-PROD}" .
+	docker build -t "${CDL_REPOSITORY_PATH}"cdl-"${i}":"${CDL_VERSION:-latest}" --build-arg BIN="${i}" . -f bin.Dockerfile --no-cache
 done
 
 if [[ -n "$CDL_PUSH" ]]
