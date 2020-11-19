@@ -49,13 +49,12 @@ async fn main() -> anyhow::Result<()> {
             .unwrap(),
     );
     let cache = Arc::new(Mutex::new(LruCache::new(config.cache_capacity)));
-    let rabbit_consumer = rabbit_consumer.leak();
-    let rest_consumer = rest_consumer.leak();
-    let message_stream = rabbit_consumer
-        .consume()
-        .await
-        .merge(rest_consumer.consume().await);
+
+    let rabbit_consumer = rabbit_consumer.leak().consume().await;
+    let rest_consumer = rest_consumer.leak().consume().await;
+    let message_stream = rabbit_consumer.merge(rest_consumer);
     pin!(message_stream);
+
     while let Some(message) = message_stream.next().await {
         match message {
             Ok(message) => {

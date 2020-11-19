@@ -155,6 +155,7 @@ spec:
           value: "info,{{ .Values.dataRouter.bin }}=debug"
         ports:
         - containerPort: 51805
+        - restPort: 51806
       imagePullSecrets:
         - name: {{ .Values.global.cdlImagePullSecrets }}
 
