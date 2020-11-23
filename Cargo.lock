@@ -2505,6 +2505,7 @@ dependencies = [
 name = "query-service-ts"
 version = "0.1.0"
 dependencies = [
+ "tonic",
  "tonic-build",
 ]
 

@@ -17,6 +17,7 @@ name = "query-service-ts"
 path = "src/main.rs"
 
 [dependencies]
+tonic       = "0.3"
 
 [build-dependencies]
 tonic-build = { version = "0.3", default-features = false, features = ["prost", "transport"] }
