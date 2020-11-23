@@ -1,10 +1,10 @@
 [package]
-name = "query-service-ts"
 authors = ["CDL Team"]
-version = "0.1.0"
-edition = "2018"
 build = "build.rs"
+edition = "2018"
 license = "Apache-2.0"
+name = "query-service-ts"
+version = "0.1.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -17,10 +17,14 @@ name = "query-service-ts"
 path = "src/main.rs"
 
 [dependencies]
-tonic       = "0.3"
-prost       = "0.6"
-tokio       = { version = "0.2", features = ["macros"] }
-serde_json  = "1.0"
+anyhow = "1.0"
+log = "0.4.11"
+prost = "0.6"
+serde_json = "1.0"
+structopt = "0.3"
+tokio = {version = "0.2", features = ["macros"]}
+tonic = "0.3"
+utils = {path = "../utils"}
 
 [build-dependencies]
-tonic-build = { version = "0.3", default-features = false, features = ["prost", "transport"] }
+tonic-build = {version = "0.3", default-features = false, features = ["prost", "transport"]}

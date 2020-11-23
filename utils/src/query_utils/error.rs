@@ -1,5 +1,4 @@
 use thiserror::Error as DeriveError;
-
 pub use tonic::{Code, Status};
 
 #[derive(Debug, DeriveError)]
