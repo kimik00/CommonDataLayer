@@ -1,7 +1,4 @@
-use std::time::Duration;
-
-use rdkafka::producer::{FutureProducer, FutureRecord};
-use rdkafka::ClientConfig;
+use utils::messaging_system::publisher::CommonPublisher;
 use uuid::Uuid;
 
 pub use config::ReportServiceConfig;
@@ -13,17 +10,15 @@ mod config;
 mod error;
 
 pub struct ReportService {
-    producer: FutureProducer,
+    producer: CommonPublisher,
     topic: String,
 }
 
 impl ReportService {
-    pub fn new(args: ReportServiceConfig) -> Result<Self, Error> {
+    pub async fn new(args: ReportServiceConfig) -> Result<Self, Error> {
         Ok(Self {
-            producer: ClientConfig::new()
-                .set("bootstrap.servers", &args.broker)
-                .set("message.timeout.ms", "5000")
-                .create()
+            producer: CommonPublisher::new_kafka(&args.broker)
+                .await
                 .map_err(Error::ProducerCreation)?,
             topic: args.topic,
         })
@@ -43,19 +38,10 @@ impl ReportService {
             object_id,
         );
 
-        let record = FutureRecord {
-            topic: &self.topic,
-            partition: None,
-            payload: Some(&payload),
-            key: Some("command_service.status"),
-            timestamp: None,
-            headers: None,
-        };
-
         self.producer
-            .send(record, Duration::from_secs(0))
+            .publish_message(&self.topic, "command_service.status", payload.into())
             .await
-            .map_err(|err| Error::FailedToReport(err.0))?;
+            .map_err(Error::FailedToReport)?;
 
         Ok(())
     }

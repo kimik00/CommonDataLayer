@@ -1,5 +1,3 @@
-#![feature(box_syntax)]
-
 use log::{error, info, trace};
 use structopt::StructOpt;
 
@@ -11,27 +9,15 @@ use command_service::report::ReportService;
 use utils::{metrics, status_endpoints};
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     env_logger::init();
     let args = Args::from_args();
 
     trace!("Environment: {:?}", args);
 
-    let report_service = match ReportService::new(args.report_config) {
-        Ok(report_service) => report_service,
-        Err(error) => {
-            error!("Failed to initialize report service `{}`", error);
-            return;
-        }
-    };
+    let report_service = ReportService::new(args.report_config).await?;
 
-    let output_service = match Output::new(args.output_config).await {
-        Ok(output_service) => output_service,
-        Err(error) => {
-            error!("Failed to initialize output service: `{}`", error);
-            return;
-        }
-    };
+    let output_service = Output::new(args.output_config).await?;
 
     let message_router = MessageRouter::new(
         output_service.channel(),
@@ -39,13 +25,7 @@ async fn main() {
         output_service.name(),
     );
 
-    let input_service = match KafkaInput::new(args.input_config, message_router) {
-        Ok(input_service) => input_service,
-        Err(error) => {
-            error!("Failed to initialize input service: `{}`", error);
-            return;
-        }
-    };
+    let input_service = KafkaInput::new(args.input_config, message_router).await?;
 
     info!("Starting the service with output {:?}", output_service);
 
@@ -56,5 +36,6 @@ async fn main() {
         Err(input_err)   = input_service.listen() => error!("Kafka input service finished abruptly: `{:?}`", input_err),
         Err(output_err)  = output_service.run() => error!("Output service finished abruptly: `{:?}`", output_err),
         else => info!("Finished!")
-    }
+    };
+    Ok(())
 }
