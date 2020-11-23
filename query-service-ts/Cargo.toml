@@ -1,0 +1,22 @@
+[package]
+name = "query-service-ts"
+authors = ["CDL Team"]
+version = "0.1.0"
+edition = "2018"
+build = "build.rs"
+license = "Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "query_service_ts"
+path = "src/lib.rs"
+
+[[bin]]
+name = "query-service-ts"
+path = "src/main.rs"
+
+[dependencies]
+
+[build-dependencies]
+tonic-build = { version = "0.3", default-features = false, features = ["prost", "transport"] }
