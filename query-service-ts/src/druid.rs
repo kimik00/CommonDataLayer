@@ -1,4 +1,4 @@
-use crate::schema::{query_server::Query, ObjectIds, SchemaId, ValueMap};
+use crate::druid_schema::{query_server::Query, ObjectIds, SchemaId, ValueMap};
 use anyhow::Context;
 use bb8::{Pool, PooledConnection};
 use reqwest::Client;

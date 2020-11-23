@@ -1,4 +1,4 @@
-use schema::query_client::QueryClient;
+use schema::{query_client::QueryClient, Range, Tag};
 use tonic::transport::Channel;
 
 pub mod victoria;

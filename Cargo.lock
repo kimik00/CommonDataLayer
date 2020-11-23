@@ -2506,6 +2506,7 @@ name = "query-service-ts"
 version = "0.1.0"
 dependencies = [
  "prost",
+ "serde_json",
  "tokio 0.2.23",
  "tonic",
  "tonic-build",
