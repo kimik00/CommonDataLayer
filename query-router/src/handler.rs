@@ -1,4 +1,5 @@
 use crate::{cache::AddressCache, error::Error};
+use query_service_ts::{helper_types::DataPointDef, schema::DataPoint};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, sync::Arc};
 use uuid::Uuid;
@@ -57,4 +58,38 @@ fn byte_map_to_json_map(map: HashMap<String, Vec<u8>>) -> Result<Map<String, Val
             ))
         })
         .collect::<Result<Map<String, Value>, Error>>()
+}
+
+pub async fn query_by_range(
+    schema_id: Uuid,
+    start: String,
+    end: String,
+    step: f32,
+    cache: Arc<AddressCache>,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    let address = cache.get_address(schema_id).await?;
+    let timeseries =
+        query_service_ts::query_by_range(schema_id.to_string(), start, end, step, address)
+            .await
+            .map_err(Error::QueryError)?;
+    Ok(warp::reply::json(&make_serializable_timeseries(timeseries)))
+}
+
+pub async fn query_by_tag(
+    tag_id: Uuid,
+    cache: Arc<AddressCache>,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    let address = cache.get_address(tag_id).await?;
+    let timeseries = query_service_ts::query_by_tag(tag_id.to_string(), address)
+        .await
+        .map_err(Error::QueryError)?;
+
+    Ok(warp::reply::json(&make_serializable_timeseries(timeseries)))
+}
+
+fn make_serializable_timeseries(timeseries: Vec<DataPoint>) -> Vec<DataPointDef> {
+    timeseries
+        .into_iter()
+        .map(|datapoint| DataPointDef::from(datapoint))
+        .collect()
 }
