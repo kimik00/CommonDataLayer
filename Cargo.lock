@@ -733,7 +733,6 @@ dependencies = [
  "anyhow",
  "env_logger 0.8.1",
  "envy",
- "futures-util",
  "log",
  "lru-cache",
  "schema-registry",
