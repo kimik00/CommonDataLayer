@@ -1,5 +1,5 @@
 use crate::{cache::AddressCache, error::Error};
-use query_service_ts::{helper_types::DataPointDef, schema::DataPoint};
+use query_service_ts::{helper_types::DataPointSerializable, schema::DataPoint};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, sync::Arc};
 use uuid::Uuid;
@@ -87,9 +87,9 @@ pub async fn query_by_tag(
     Ok(warp::reply::json(&make_serializable_timeseries(timeseries)))
 }
 
-fn make_serializable_timeseries(timeseries: Vec<DataPoint>) -> Vec<DataPointDef> {
+fn make_serializable_timeseries(timeseries: Vec<DataPoint>) -> Vec<DataPointSerializable> {
     timeseries
         .into_iter()
-        .map(|datapoint| DataPointDef::from(datapoint))
+        .map(|datapoint| DataPointSerializable(datapoint))
         .collect()
 }
