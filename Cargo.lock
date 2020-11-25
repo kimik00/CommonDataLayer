@@ -2506,8 +2506,10 @@ name = "query-service-ts"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bb8",
  "log",
  "prost",
+ "reqwest",
  "serde",
  "serde_json",
  "structopt",

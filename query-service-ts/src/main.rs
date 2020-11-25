@@ -15,7 +15,7 @@ pub struct Config {
 
 #[derive(StructOpt)]
 pub enum ConfigType {
-    // Put Victoria QS here once created
+    Postgres(query_service_ts::victoria::VictoriaConfig),
 }
 
 //Could be extracted to utils, dunno how atm
@@ -30,12 +30,18 @@ async fn spawn_server<Q: Query>(service: Q, port: u16) -> anyhow::Result<()> {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()>  {
     let config: Config = Config::from_args();
 
     metrics::serve();
 
-    // match config.inner {
-    //     _ => warn!("Unknown Database chosen!");
-    // }
+    match config.inner {
+        ConfigType::Postgres(victoria_config) => {
+            spawn_server(
+                query_service_ts::victoria::VictoriaQuery::load(victoria_config).await?,
+                config.input_port,
+            )
+            .await
+        }
+    }
 }
