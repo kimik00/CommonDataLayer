@@ -15,7 +15,7 @@ Below is the data needed by data router:
 {
     "schemaId": <UUID>,
     "objectId": <UUID>,
-    "data": "{ \"some_propery": \"object\"}"
+    "data": "{ \"some_property": \"object\"}"
 
 }
 ```

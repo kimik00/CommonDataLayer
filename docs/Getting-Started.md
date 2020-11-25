@@ -107,7 +107,7 @@ cargo run --bin query_service -- \
 
 
 ### Query Data via Query Router
-Query Router works with query service to route requests to the correct stoarge solution per schema's query address.
+The Query Router works with the query services to route requests to the correct repository, determined per schema (based on its query address).
 
 ```
 cargo run --bin query_router -- \

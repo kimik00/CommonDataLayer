@@ -2,7 +2,7 @@
 
 ### Responsibilites
 
-The query service is reponsible for querying data from several dabtabases.
+The query service is responsible for querying data from several databases.
 
 ### Communication
 
@@ -11,7 +11,7 @@ Communication to query service is done through [gRPC][grpc] based on two [endpoi
 
 ### Configuration
 
-To configure query service, set environmet variables for `INPUT_PORT`, `DS_QUERY_URL` or `POSTGRES_QUERY_URL` to configure the corressponding database.
+To configure the query service, set environment variables for `INPUT_PORT`, `DS_QUERY_URL` or `POSTGRES_QUERY_URL` to configure the corresponding database.
 
 See an example [configuration][configuration] of deployment of data router and other services. 
 

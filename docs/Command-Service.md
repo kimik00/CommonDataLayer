@@ -2,11 +2,11 @@
 
 ### Responsibilities
 
-The command service is reponsible for consuming a specific input topic and writing that data to its to a variety of different stroage solutions. 
+The command service is responsible for consuming a specific input topic and writing that data to its to a variety of different storage solutions. 
 
 ### Communication
 
-Communication from command service is done through through Kafka. An input topic is consumed and the message is routed to the corresponding db based on configuration. 
+Communication from the command service is done through through Kafka. An input topic is consumed and the message is routed to the corresponding database based on configuration. 
 
 
 ### Configuration
