@@ -43,3 +43,12 @@ pub async fn query_by_schema(
 
     Ok(response.into_inner().values)
 }
+
+pub async fn query_raw(
+    _raw_msg: String,
+    _addr: String,
+) -> Result<HashMap<String, Vec<u8>>, ClientError> {
+    // dummy mockup
+
+    Ok(HashMap::new())
+}

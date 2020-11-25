@@ -2,6 +2,7 @@ use crate::{cache::AddressCache, error::Error};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, sync::Arc};
 use uuid::Uuid;
+use warp::Buf;
 
 pub async fn query_single(
     object_id: Uuid,
@@ -42,6 +43,20 @@ pub async fn query_by_schema(
 ) -> Result<impl warp::Reply, warp::Rejection> {
     let address = cache.get_address(schema_id).await?;
     let values = query_service::query_by_schema(schema_id.to_string(), address)
+        .await
+        .map_err(Error::QueryError)?;
+
+    Ok(warp::reply::json(&byte_map_to_json_map(values)?))
+}
+
+pub async fn query_raw(
+    body: impl Buf,
+    schema_id: Uuid,
+    cache: Arc<AddressCache>,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    let msg = String::from_utf8_lossy(body.bytes()).into_owned();
+    let address = cache.get_address(schema_id).await?;
+    let values = query_service::query_raw(msg, address)
         .await
         .map_err(Error::QueryError)?;
 
