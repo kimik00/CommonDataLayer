@@ -142,6 +142,7 @@ services:
     environment:
       VICTORIA_QUERY_URL: "http://127.0.0.1:8428"
       INPUT_PORT: 50104
+      RUST_LOG: debug
 
   query_router1:
     image: cdl-query-router:latest

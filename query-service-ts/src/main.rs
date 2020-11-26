@@ -32,7 +32,7 @@ async fn spawn_server<Q: Query>(service: Q, port: u16) -> anyhow::Result<()> {
 #[tokio::main]
 async fn main() -> anyhow::Result<()>  {
     let config: Config = Config::from_args();
-
+    env_logger::init();
     metrics::serve();
 
     match config.inner {

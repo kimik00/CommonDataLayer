@@ -2468,6 +2468,7 @@ name = "query-router"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "env_logger 0.8.2",
  "lru-cache",
  "query-service",
  "query-service-ts",
@@ -2507,6 +2508,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bb8",
+ "env_logger 0.8.2",
  "log",
  "prost",
  "reqwest",

@@ -61,10 +61,10 @@ fn byte_map_to_json_map(map: HashMap<String, Vec<u8>>) -> Result<Map<String, Val
 }
 
 pub async fn query_by_range(
-    schema_id: Uuid,
     start: String,
     end: String,
     step: f32,
+    schema_id: Uuid,
     cache: Arc<AddressCache>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     let address = cache.get_address(schema_id).await?;
