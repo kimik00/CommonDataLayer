@@ -134,6 +134,15 @@ services:
       POSTGRES_QUERY_URL: "postgresql://postgres:1234@postgres1:5432/postgres"
       INPUT_PORT: 50102
 
+  victoria_query1:
+    image: cdl-query-service-ts:latest
+    command: "/bin/query-service-ts victoria"
+    ports:
+      - "50104:50104"
+    environment:
+      VICTORIA_QUERY_URL: "http://127.0.0.1:8428"
+      INPUT_PORT: 50104
+
   query_router1:
     image: cdl-query-router:latest
     command: "/bin/query-router"

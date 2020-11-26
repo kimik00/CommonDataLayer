@@ -1,6 +1,7 @@
-use crate::schema::{query_server::Query , Range, Tag, TimeSeries};
+use crate::schema::{query_server::Query, Range, Tag, TimeSeries};
 use anyhow::Context;
 use bb8::{Pool, PooledConnection};
+use log::info;
 use reqwest::Client;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
@@ -11,8 +12,8 @@ use tonic::{Request, Response, Status};
 pub struct VictoriaConfig {
     #[structopt(long = "victoria-query-url", env = "VICTORIA_QUERY_URL")]
     victoria_url: String,
-    #[structopt(long = "victoria-table-name", env = "VICTORIA_TABLE_NAME")]
-    victoria_table_name: String,
+    //#[structopt(long = "victoria-table-name", env = "VICTORIA_TABLE_NAME")]
+    //victoria_table_name: String,
 }
 
 pub struct VictoriaConnectionManager;
@@ -38,7 +39,7 @@ impl bb8::ManageConnection for VictoriaConnectionManager {
 pub struct VictoriaQuery {
     pool: Pool<VictoriaConnectionManager>,
     addr: String,
-    table_name: String,
+    //table_name: String,
 }
 
 impl VictoriaQuery {
@@ -51,7 +52,7 @@ impl VictoriaQuery {
         Ok(Self {
             pool,
             addr: config.victoria_url,
-            table_name: config.victoria_table_name,
+            //table_name: config.victoria_table_name,
         })
     }
 
@@ -88,10 +89,12 @@ impl Query for VictoriaQuery {
         &self,
         request: Request<Range>,
     ) -> Result<Response<TimeSeries>, Status> {
+        info!("Victoria query_by_range");
         Ok(tonic::Response::new(TimeSeries::default()))
     }
     //TODO: IMPLEMENT ME!
     async fn query_by_tag(&self, request: Request<Tag>) -> Result<Response<TimeSeries>, Status> {
+        info!("Victoria query_by_tag");
         Ok(tonic::Response::new(TimeSeries::default()))
     }
 }

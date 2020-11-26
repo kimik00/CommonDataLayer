@@ -15,7 +15,7 @@ pub struct Config {
 
 #[derive(StructOpt)]
 pub enum ConfigType {
-    Postgres(query_service_ts::victoria::VictoriaConfig),
+    Victoria(query_service_ts::victoria::VictoriaConfig),
 }
 
 //Could be extracted to utils, dunno how atm
@@ -36,7 +36,7 @@ async fn main() -> anyhow::Result<()>  {
     metrics::serve();
 
     match config.inner {
-        ConfigType::Postgres(victoria_config) => {
+        ConfigType::Victoria(victoria_config) => {
             spawn_server(
                 query_service_ts::victoria::VictoriaQuery::load(victoria_config).await?,
                 config.input_port,
