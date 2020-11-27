@@ -1,4 +1,4 @@
-use crate::schema::{query_server::Query, DataPoint, Range, Tag, TimeSeries};
+use crate::schema::{query_server::Query, DataPoint, Range, SchemaId, TimeSeries};
 use anyhow::Context;
 use bb8::{Pool, PooledConnection};
 use log::info;
@@ -99,8 +99,8 @@ impl Query for VictoriaQuery {
     }
 
     //TODO: IMPLEMENT ME!
-    async fn query_by_tag(&self, request: Request<Tag>) -> Result<Response<TimeSeries>, Status> {
-        info!("Victoria query_by_tag: {:?}", request.get_ref());
+    async fn query_by_schema(&self, request: Request<SchemaId>) -> Result<Response<TimeSeries>, Status> {
+        info!("Victoria query_by_schema: {:?}", request.get_ref());
         Ok(tonic::Response::new(TimeSeries {
             datapoints: vec![DataPoint {
                 timestamp: "12:12:12".to_string(),

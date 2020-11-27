@@ -45,6 +45,12 @@ pub async fn query_by_schema(
     let values = query_service::query_by_schema(schema_id.to_string(), address)
         .await
         .map_err(Error::QueryError)?;
+    // TODO: switch between correct QS
+    //let timeseries = query_service_ts::query_by_schema(schema_id.to_string(), address)
+    //    .await
+    //    .map_err(Error::QueryError)?;
+
+    //Ok(warp::reply::json(&make_serializable_timeseries(timeseries)))
 
     Ok(warp::reply::json(&byte_map_to_json_map(values)?))
 }
@@ -64,25 +70,13 @@ pub async fn query_by_range(
     start: String,
     end: String,
     step: f32,
-    schema_id: Uuid,
+    object_id: Uuid,
     cache: Arc<AddressCache>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    let address = cache.get_address(schema_id).await?;
+    let address = cache.get_address(object_id).await?;
     let timeseries =
-        query_service_ts::query_by_range(schema_id.to_string(), start, end, step, address)
+        query_service_ts::query_by_range(object_id.to_string(), start, end, step, address)
             .await
             .map_err(Error::QueryError)?;
-    Ok(warp::reply::json(&make_serializable_timeseries(timeseries)))
-}
-
-pub async fn query_by_tag(
-    tag_id: Uuid,
-    cache: Arc<AddressCache>,
-) -> Result<impl warp::Reply, warp::Rejection> {
-    let address = cache.get_address(tag_id).await?;
-    let timeseries = query_service_ts::query_by_tag(tag_id.to_string(), address)
-        .await
-        .map_err(Error::QueryError)?;
-
     Ok(warp::reply::json(&make_serializable_timeseries(timeseries)))
 }
