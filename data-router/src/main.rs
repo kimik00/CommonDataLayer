@@ -4,6 +4,7 @@ use log::error;
 use lru_cache::LruCache;
 use schema_registry::{connect_to_registry, rpc::schema::Id};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::{
     process,
     sync::{Arc, Mutex},
@@ -91,22 +92,46 @@ async fn handle_message(
     kafka_error_channel: Arc<String>,
     schema_registry_addr: Arc<String>,
 ) {
+    // Returns an empty result async for sending message to kafka after serialization
     let result: anyhow::Result<()> = async {
-        let event: DataRouterInputData =
-            serde_json::from_str(message.payload()?).context("Payload deserialization failed")?;
         let since_the_epoch = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards"); // TODO: Ordering can be different when scaling
-        let topic_name = get_schema_topic(&cache, &event, &schema_registry_addr).await?;
-        let data = CommandServiceInsertMessage {
-            object_id: event.object_id,
-            payload: event.data,
-            schema_id: event.schema_id,
-            timestamp: since_the_epoch.as_millis() as i64, // TODO: Change types?
-        };
-        let payload = serde_json::to_vec(&data).unwrap_or_default();
-        let key = data.object_id.to_string();
-        send_message(producer.as_ref(), &topic_name, &key, payload).await;
+            .expect("Time went backwards"); 
+
+    
+
+        // Check if something is an array
+        let value : Value = serde_json::from_str(message.payload()?).unwrap();
+        if value.is_array() {
+            let arr_messages: Vec<DataRouterInputData> = serde_json::from_str(message.payload()?)?;
+            for event in arr_messages.iter(){
+                let topic_name = get_schema_topic(&cache, &event, &schema_registry_addr).await?;
+
+                let data = CommandServiceInsertMessage {
+                    object_id: event.object_id,
+                    payload: event.data,
+                    schema_id: event.schema_id,
+                    timestamp: since_the_epoch.as_millis() as i64, // TODO: Change types?
+                };
+
+                let payload = serde_json::to_vec(&data).unwrap_or_default();
+                let key = data.object_id.to_string();
+                send_message(producer.as_ref(), &topic_name, &key, payload).await;
+            }
+        } else {
+            let event  = serde_json::from_str(message.payload()?).context("Payload deserialization failed")?;
+            let topic_name = get_schema_topic(&cache, &event, &schema_registry_addr).await?;
+
+            let data = CommandServiceInsertMessage {
+                object_id: event.object_id,
+                payload: event.data,
+                schema_id: event.schema_id,
+                timestamp: since_the_epoch.as_millis() as i64, // TODO: Change types?
+            };
+            let payload = serde_json::to_vec(&data).unwrap_or_default();
+            let key = data.object_id.to_string();
+            send_message(producer.as_ref(), &topic_name, &key, payload).await;
+        }
         Ok(())
     }
     .await;
