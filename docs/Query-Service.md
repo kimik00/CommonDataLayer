@@ -1,17 +1,38 @@
 # Query Service
 
-### Responsibilites
+### Technical Description
 
-The query service is responsible for querying data from several databases.
+The query service (`QS` or for example for postgresql its `QSPG`), is responsible for querying data from specific repository. It offers two paths that can be accessed:
+First path depends on type of repo
 
 ### Communication
-
 Communication to query service is done through [gRPC][grpc] based on two [endpoints][endpoints] of querying for data by `SCHEMA_ID` or multiple `OBJECT_ID`s. Query service communicates with multiple databases such as postgresql, druid, sled. Query service also communicates with [schema registry][schema-registry]. 
 
+Interacts with:
+- Druid
+- Postgresql
+- VictoriaMetrics (accidentaly also Prometheus)
+- Sled
+- Troika
+- .. any similar grpc-able repo
+
+Ingest methods:
+- GRPC (req-response)
+
+Egest methods (supported repositores):
+- GRPC
 
 ### Configuration
 
-To configure the query service, set environment variables for `INPUT_PORT`, `DS_QUERY_URL` or `POSTGRES_QUERY_URL` to configure the corresponding database.
+`
+INPUT_PORT
+RUST_LOG
+POSTGRES_USERNAME
+POSTGRES_PASSWORD
+POSTGRES_HOST
+POSTGRES_PORT
+POSTGRES_DBNAME
+`
 
 See an example [configuration][configuration] of deployment of data router and other services. 
 

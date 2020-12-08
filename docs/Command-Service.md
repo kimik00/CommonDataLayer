@@ -1,17 +1,28 @@
 # Command Service
 
-### Responsibilities
+### Technical Description
 
-The command service is responsible for consuming a specific input topic and writing that data to its to a variety of different storage solutions. 
+The Command-Service (commonly refered also as `CS`, or `CSPG` - indicating posgres instance), interfaces storage repositories with the CDL ecosystem.
 
-### Communication
+Interacts with:
+- Data Router (optional, either)
+- Message Queue (optional, either)
+- Supported Repository (one of)
 
-Communication from the command service is done through through Kafka. An input topic is consumed and the message is routed to the corresponding database based on configuration. 
+Ingest methods:
+- Kafka
+- RabbitMq
+- GRPC (currently either only one instance without kubernetes)
 
+Egest methods (supported repositores):
+- Postgresql (tested on 12, should support anything >=9, advised 13)
+- VictoriaMetrics
+- Druid
+- Sleight (CDL's document storage)
+- Troika (CDL's binary data repo)
+- .. or anything with matching GRPC :)
 
-### Configuration
-
-It is important to ensure that configure command service with the url to a database from eitehr Postgres, Druid or SLED
+### Configuration (environment files)
 
 ```
 KAFKA_INPUT_GROUP_ID
