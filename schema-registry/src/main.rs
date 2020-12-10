@@ -47,13 +47,14 @@ pub async fn main() -> anyhow::Result<()> {
         config.replication_role,
         replication_config,
         config.pod_name,
-    );
+    )
+    .await?;
 
     if let Some(export_dir_path) = config.export_dir {
         let exported = registry.export_all()?;
         let exported = serde_json::to_string(&exported)?;
         let export_path = export_path(export_dir_path);
-        let mut file = File::open(export_path)?;
+        let mut file = File::create(export_path)?;
         write!(file, "{}", exported)?;
     }
 
