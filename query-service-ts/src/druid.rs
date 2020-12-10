@@ -1,11 +1,11 @@
-use crate::schema::{query_server::Query, ObjectIds, RawStatement, SchemaId, ValueBytes, ValueMap};
+use crate::schema::{query_druid_server::QueryDruid, ObjectIds, SchemaId, ValueMap};
 use anyhow::Context;
 use bb8::{Pool, PooledConnection};
 use reqwest::Client;
 use serde::{de::DeserializeOwned, Deserialize};
 use serde_json::{json, Value};
 use structopt::StructOpt;
-use tonic::{Code, Request, Response, Status};
+use tonic::{Request, Response, Status};
 use utils::metrics::counter;
 
 #[derive(Debug, StructOpt)]
@@ -92,7 +92,7 @@ impl DruidQuery {
 }
 
 #[tonic::async_trait]
-impl Query for DruidQuery {
+impl QueryDruid for DruidQuery {
     async fn query_multiple(
         &self,
         request: Request<ObjectIds>,
@@ -151,17 +151,5 @@ impl Query for DruidQuery {
             .collect();
 
         Ok(tonic::Response::new(ValueMap { values }))
-    }
-
-    async fn query_raw(
-        &self,
-        _request: Request<RawStatement>,
-    ) -> Result<Response<ValueBytes>, Status> {
-        counter!("cdl.query-service.query-raw.druid", 1);
-
-        Err(Status::new(
-            Code::Unimplemented,
-            "query-service-druid does not support RAW requests yet",
-        ))
     }
 }

@@ -1,8 +1,10 @@
 use crate::schema::{Range, SchemaId};
 use schema::query_client::QueryClient;
+
 use tonic::transport::Channel;
 use utils::query_utils::error::ClientError;
 
+pub mod druid;
 pub mod victoria;
 
 pub mod schema {

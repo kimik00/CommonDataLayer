@@ -6,6 +6,11 @@ service Query {
      rpc QueryByRange(Range) returns (TimeSeries);
 }
 
+service QueryDruid {
+    rpc QueryMultiple (ObjectIds) returns (ValueMap);
+    rpc QueryBySchema (SchemaId) returns (ValueMap);
+}
+
 message Range {
     string object_id = 1;
     string start = 2;
@@ -19,4 +24,12 @@ message SchemaId {
 
 message TimeSeries{
     string timeseries = 1;
+}
+
+message ObjectIds {
+    repeated string object_ids = 1;
+}
+
+message ValueMap {
+    map<string, bytes> values = 1;
 }
