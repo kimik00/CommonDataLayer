@@ -17,7 +17,7 @@ pub mod storage {
 pub struct NewSchema {
     pub name: String,
     pub definition: Value,
-    pub kafka_topic: String,
+    pub insert_address: String,
     pub query_address: String,
 }
 
@@ -26,13 +26,13 @@ impl NewSchema {
         let Self {
             name,
             definition,
-            kafka_topic,
+            insert_address: kafka_topic,
             query_address,
         } = self;
         (
             vertices::Schema {
                 name,
-                kafka_topic,
+                insert_address,
                 query_address,
             },
             definition,

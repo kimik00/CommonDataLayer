@@ -87,7 +87,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
             name: request.name,
             definition: parse_json(&request.definition)?,
             query_address: request.query_address,
-            kafka_topic: request.topic_name,
+            insert_address: request.topic_name,
         };
 
         let new_id = self.db.add_schema(new_schema.clone(), schema_id)?;

@@ -572,7 +572,7 @@ mod tests {
                     }
                 }
             }),
-            kafka_topic: "topic1".into(),
+            insert_address: "topic1".into(),
             query_address: "query1".into(),
         }
     }
@@ -597,7 +597,7 @@ mod tests {
                     }
                 }
             }),
-            kafka_topic: "topic2".into(),
+            insert_address: "topic2".into(),
             query_address: "query2".into(),
         }
     }
