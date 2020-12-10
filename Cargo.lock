@@ -2491,15 +2491,14 @@ dependencies = [
  "document-storage",
  "env_logger 0.8.2",
  "log",
- "prost",
  "reqwest",
+ "rpc",
  "serde",
  "serde_json",
  "structopt",
  "thiserror",
  "tokio 0.2.23",
  "tonic",
- "tonic-build",
  "utils",
  "uuid",
 ]
@@ -2837,6 +2836,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rpc"
+version = "0.1.0"
+dependencies = [
+ "prost",
+ "tonic",
+ "tonic-build",
+]
+
+[[package]]
 name = "rust-argon2"
 version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2894,20 +2902,18 @@ dependencies = [
  "env_logger 0.8.2",
  "envy",
  "futures",
- "futures-util",
  "indradb-lib",
  "jmespatch",
  "jsonschema",
  "lazy_static",
  "log",
- "prost",
+ "rpc",
  "semver 0.11.0",
  "serde",
  "serde_json",
  "thiserror",
  "tokio 0.2.23",
  "tonic",
- "tonic-build",
  "url",
  "utils",
  "uuid",

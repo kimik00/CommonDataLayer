@@ -22,7 +22,6 @@ env_logger  = "0.8"
 bb8         = "0.4"
 anyhow      = "1.0"
 thiserror   = "1.0"
-prost       = "0.6"
 structopt   = "0.3"
 tonic       = "0.3"
 serde_json  = "1.0"
@@ -31,8 +30,6 @@ tokio       = { version = "0.2", features = ["macros"] }
 uuid        = { version = "0.8", features = ["v1", "serde"] }
 reqwest     = { version = "0.10", features = ["json"] }
 utils       = { path = "../utils" }
+rpc         = { path = "../rpc" }
 document-storage        = { path = "../document-storage/" }
 bb8-postgres            = { version = "0.4", features = ["with-uuid-0_8", "with-serde_json-1"] }
-
-[build-dependencies]
-tonic-build = { version = "0.3", default-features = false, features = ["prost", "transport"] }
