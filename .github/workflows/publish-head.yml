@@ -8,7 +8,7 @@ on:
       - "develop"
     paths-ignore:
       - ".github/"
-      - "benchmarking/"
+      - "crates/benchmarking/"
       - "docs/"
       - "examples/"
       - "helm/"
