@@ -33,4 +33,6 @@ pub enum Error {
     SenderDropped,
     #[error("Failed to initialize reporting module")]
     FailedToInitializeReporting(report::Error),
+    #[error("Failed to initialize gRPC server: {0}")]
+    FailedToListenToGrpc(tonic::transport::Error),
 }

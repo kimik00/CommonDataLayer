@@ -12,13 +12,13 @@ use crate::{
     error::{MalformedError, RegistryError, RegistryResult},
     types::DbExport,
     types::SchemaDefinition,
-    types::SchemaType,
 };
 use indradb::{
     Datastore, EdgeQueryExt, RangeVertexQuery, SledDatastore, SpecificEdgeQuery,
     SpecificVertexQuery, Transaction, VertexQueryExt,
 };
 use log::{trace, warn};
+use rpc::schema_registry::types::SchemaType;
 use semver::Version;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -137,15 +137,17 @@ impl<D: Datastore> SchemaDb<D> {
         .collect()
     }
 
-    pub fn get_schema_topic(&self, id: Uuid) -> RegistryResult<String> {
+    pub fn get_schema_insert_address(&self, id: Uuid) -> RegistryResult<String> {
         let conn = self.connect()?;
-        let topic_property = conn
-            .get_vertex_properties(SpecificVertexQuery::single(id).property(Schema::TOPIC_NAME))?
+        let address_property = conn
+            .get_vertex_properties(
+                SpecificVertexQuery::single(id).property(Schema::INSERT_ADDRESS),
+            )?
             .into_iter()
             .next()
             .ok_or(RegistryError::NoSchemaWithId(id))?;
 
-        serde_json::from_value(topic_property.value)
+        serde_json::from_value(address_property.value)
             .map_err(|_| MalformedError::MalformedSchema(id).into())
     }
 
@@ -223,10 +225,17 @@ impl<D: Datastore> SchemaDb<D> {
         Ok(())
     }
 
-    pub fn update_schema_topic(&self, id: Uuid, new_topic: String) -> RegistryResult<()> {
+    pub fn update_schema_insert_address(
+        &self,
+        id: Uuid,
+        new_insert_address: String,
+    ) -> RegistryResult<()> {
         self.ensure_schema_exists(id)?;
 
-        self.set_vertex_properties(id, &[(Schema::TOPIC_NAME, Value::String(new_topic))])?;
+        self.set_vertex_properties(
+            id,
+            &[(Schema::INSERT_ADDRESS, Value::String(new_insert_address))],
+        )?;
 
         Ok(())
     }

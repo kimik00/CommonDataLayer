@@ -1,6 +1,6 @@
 use command_service::args::Args;
 use command_service::communication::MessageRouter;
-use command_service::input::{Error, KafkaInput, KafkaInputConfig};
+use command_service::input::{Error, InputConfig, RpcInput};
 use command_service::output::{
     DruidOutputPlugin, OutputArgs, OutputPlugin, PostgresOutputPlugin, SleighOutputPlugin,
     VictoriaMetricsOutputPlugin,
@@ -57,7 +57,7 @@ async fn main() -> anyhow::Result<()> {
 }
 
 async fn start_services(
-    input_config: KafkaInputConfig,
+    input_config: InputConfig,
     report_config: ReportServiceConfig,
     output: impl OutputPlugin,
 ) -> Result<(), Error> {
@@ -73,7 +73,7 @@ async fn start_services(
 
     let message_router = MessageRouter::new(report_service, output);
 
-    let input_service = KafkaInput::new(input_config, message_router).await?;
+    let input_service = RpcInput::new(message_router, input_config.task_limit).await;
 
-    input_service.listen().await
+    input_service.serve(input_config.port).await
 }

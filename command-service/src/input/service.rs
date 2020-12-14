@@ -1,48 +1,32 @@
 use crate::communication::{GenericMessage, MessageRouter};
-use crate::input::{Error, KafkaInputConfig};
+use crate::input::Error;
 use crate::output::OutputPlugin;
-use futures_util::stream::StreamExt;
 use log::{error, trace};
+use rpc::command_service::command_service_server::{CommandService, CommandServiceServer};
+use rpc::command_service::{Empty, InsertMessage};
 use std::process;
-use tokio::pin;
-use utils::message_types::CommandServiceInsertMessage;
-use utils::messaging_system::consumer::CommonConsumer;
-use utils::messaging_system::message::CommunicationMessage;
+use tonic::{transport::Server, Request, Response, Status};
 use utils::messaging_system::Result;
 use utils::metrics::counter;
 use utils::task_limiter::TaskLimiter;
 
-pub struct KafkaInput<P: OutputPlugin> {
-    consumer: CommonConsumer,
+pub struct RpcInput<P: OutputPlugin> {
     message_router: MessageRouter<P>,
     task_limiter: TaskLimiter,
 }
 
-impl<P: OutputPlugin> KafkaInput<P> {
-    pub async fn new(
-        config: KafkaInputConfig,
-        message_router: MessageRouter<P>,
-    ) -> Result<Self, Error> {
-        let consumer =
-            CommonConsumer::new_kafka(&config.group_id, &config.brokers, &[&config.topic])
-                .await
-                .map_err(Error::ConsumerCreationFailed)?;
-
-        Ok(Self {
-            consumer,
+impl<P: OutputPlugin> RpcInput<P> {
+    pub async fn new(message_router: MessageRouter<P>, task_limit: usize) -> Self {
+        Self {
             message_router,
-            task_limiter: TaskLimiter::new(config.task_limit),
-        })
+            task_limiter: TaskLimiter::new(task_limit),
+        }
     }
 
-    async fn handle_message(
-        router: MessageRouter<P>,
-        message: Result<Box<dyn CommunicationMessage>>,
-    ) -> Result<(), Error> {
+    async fn handle_message(message: InsertMessage, router: MessageRouter<P>) -> Result<(), Error> {
         counter!("cdl.command-service.input-request", 1);
-        let message = message.map_err(Error::FailedReadingMessage)?;
 
-        let generic_message = Self::build_message(message.as_ref())?;
+        let generic_message = Self::build_message(message)?;
 
         trace!("Received message {:?}", generic_message);
 
@@ -54,37 +38,39 @@ impl<P: OutputPlugin> KafkaInput<P> {
         Ok(())
     }
 
-    fn build_message(message: &'_ dyn CommunicationMessage) -> Result<GenericMessage, Error> {
-        let json = message.payload().map_err(Error::MissingPayload)?;
-        let event: CommandServiceInsertMessage =
-            serde_json::from_str(json).map_err(Error::PayloadDeserializationFailed)?;
-
+    fn build_message(message: InsertMessage) -> Result<GenericMessage, Error> {
         Ok(GenericMessage {
-            object_id: event.object_id,
-            schema_id: event.schema_id,
-            timestamp: event.timestamp,
-            payload: event.payload.to_string().as_bytes().to_vec(),
+            object_id: message.object_id.parse().map_err(Error::KeyNotValidUuid)?,
+            schema_id: message.schema_id.parse().map_err(Error::KeyNotValidUuid)?,
+            timestamp: message.timestamp,
+            payload: message.data,
         })
     }
 
-    pub async fn listen(self) -> Result<(), Error> {
-        let consumer = self.consumer.leak();
-        let message_stream = consumer.consume().await;
-        pin!(message_stream);
+    pub async fn serve(self, port: u16) -> Result<(), Error> {
+        Server::builder()
+            .add_service(CommandServiceServer::new(self))
+            .serve(([0, 0, 0, 0], port).into())
+            .await
+            .map_err(Error::FailedToListenToGrpc)
+    }
+}
 
-        while let Some(message) = message_stream.next().await {
-            let router = self.message_router.clone();
+#[tonic::async_trait]
+impl<P: OutputPlugin> CommandService for RpcInput<P> {
+    async fn insert(&self, request: Request<InsertMessage>) -> Result<Response<Empty>, Status> {
+        let message = request.into_inner();
+        let router = self.message_router.clone();
 
-            self.task_limiter
-                .run(async move || {
-                    if let Err(err) = Self::handle_message(router, message).await {
-                        error!("Failed to handle message: {}", err);
-                        process::abort();
-                    }
-                })
-                .await;
-        }
+        self.task_limiter
+            .run(async move || {
+                if let Err(err) = Self::handle_message(message, router).await {
+                    error!("Failed to handle message: {}", err);
+                    process::abort();
+                }
+            })
+            .await;
 
-        Ok(())
+        Ok(Response::new(Empty {}))
     }
 }

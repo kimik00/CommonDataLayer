@@ -16,8 +16,6 @@ pub enum RegistryError {
     DbError(indradb::Error),
     #[error("Unable to connect to sled database: {0}")]
     ConnectionError(indradb::Error),
-    #[error("No topic found named \"{0}\"")]
-    NoTopic(String),
     #[error("{0}")]
     MQError(String),
     #[error("Given schema was invalid")]
@@ -54,8 +52,8 @@ impl From<jsonschema::CompilationError> for RegistryError {
     }
 }
 
-impl From<utils::messaging_system::Error> for RegistryError {
-    fn from(error: utils::messaging_system::Error) -> Self {
+impl From<rpc::error::ClientError> for RegistryError {
+    fn from(error: rpc::error::ClientError) -> Self {
         Self::MQError(error.to_string())
     }
 }
@@ -63,9 +61,9 @@ impl From<utils::messaging_system::Error> for RegistryError {
 impl From<RegistryError> for Status {
     fn from(error: RegistryError) -> Status {
         match error {
-            RegistryError::NoTopic(_)
-            | RegistryError::NoSchemaWithId(_)
-            | RegistryError::NoViewWithId(_) => Status::not_found(error.to_string()),
+            RegistryError::NoSchemaWithId(_) | RegistryError::NoViewWithId(_) => {
+                Status::not_found(error.to_string())
+            }
             RegistryError::NewVersionMustBeGreatest { .. }
             | RegistryError::InvalidSchema
             | RegistryError::DuplicatedUuid(_)

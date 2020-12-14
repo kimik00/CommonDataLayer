@@ -1,19 +1,18 @@
 use anyhow::Context;
-use futures_util::stream::StreamExt;
 use log::error;
 use lru_cache::LruCache;
-use schema_registry::{connect_to_registry, rpc::schema::Id};
+use rpc::{command_service::InsertMessage, schema_registry::Id};
 use serde::{Deserialize, Serialize};
 use std::{
     process,
     sync::{Arc, Mutex},
-    time::{SystemTime, UNIX_EPOCH},
 };
 use structopt::StructOpt;
 use tokio::pin;
+use tokio::stream::StreamExt;
 use utils::{
     abort_on_poison,
-    message_types::{CommandServiceInsertMessage, DataRouterInputData},
+    message_types::DataRouterInputData,
     messaging_system::{
         consumer::CommonConsumer, message::CommunicationMessage, publisher::CommonPublisher,
     },
@@ -51,11 +50,7 @@ async fn main() -> anyhow::Result<()> {
         &[&config.kafka_topic],
     )
     .await?;
-    let producer = Arc::new(
-        CommonPublisher::new_kafka(&config.kafka_brokers)
-            .await
-            .unwrap(),
-    );
+    let producer = Arc::new(CommonPublisher::new_kafka(&config.kafka_brokers).await?);
     let cache = Arc::new(Mutex::new(LruCache::new(config.cache_capacity)));
     let consumer = consumer.leak();
     let message_stream = consumer.consume().await;
@@ -69,8 +64,8 @@ async fn main() -> anyhow::Result<()> {
             Ok(message) => {
                 tokio::spawn(handle_message(
                     message,
-                    cache.clone(),
                     producer.clone(),
+                    cache.clone(),
                     kafka_error_channel.clone(),
                     schema_registry_addr.clone(),
                 ));
@@ -86,27 +81,27 @@ async fn main() -> anyhow::Result<()> {
 
 async fn handle_message(
     message: Box<dyn CommunicationMessage>,
-    cache: Arc<Mutex<LruCache<Uuid, String>>>,
     producer: Arc<CommonPublisher>,
+    cache: Arc<Mutex<LruCache<Uuid, String>>>,
     kafka_error_channel: Arc<String>,
     schema_registry_addr: Arc<String>,
 ) {
     let result: anyhow::Result<()> = async {
         let event: DataRouterInputData =
             serde_json::from_str(message.payload()?).context("Payload deserialization failed")?;
-        let since_the_epoch = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards"); // TODO: Ordering can be different when scaling
-        let topic_name = get_schema_topic(&cache, &event, &schema_registry_addr).await?;
-        let data = CommandServiceInsertMessage {
-            object_id: event.object_id,
-            payload: event.data,
-            schema_id: event.schema_id,
-            timestamp: since_the_epoch.as_millis() as i64, // TODO: Change types?
-        };
-        let payload = serde_json::to_vec(&data).unwrap_or_default();
-        let key = data.object_id.to_string();
-        send_message(producer.as_ref(), &topic_name, &key, payload).await;
+        let insert_address =
+            get_schema_insert_address(&cache, &event, &schema_registry_addr).await?;
+
+        let mut client = rpc::command_service::connect(insert_address).await?;
+        client
+            .insert(InsertMessage {
+                object_id: event.object_id.to_string(),
+                schema_id: event.schema_id.to_string(),
+                timestamp: message.timestamp()?,
+                data: serde_json::to_vec(event.data).context("unable to serialize event")?,
+            })
+            .await?;
+
         Ok(())
     }
     .await;
@@ -133,7 +128,7 @@ async fn handle_message(
     }
 }
 
-async fn get_schema_topic(
+async fn get_schema_insert_address(
     cache: &Mutex<LruCache<Uuid, String>>,
     event: &DataRouterInputData<'_>,
     schema_addr: &str,
@@ -147,20 +142,20 @@ async fn get_schema_topic(
         return Ok(val);
     }
 
-    let mut client = connect_to_registry(schema_addr.to_owned()).await?;
-    let channel = client
-        .get_schema_topic(Id {
+    let mut client = rpc::schema_registry::connect(schema_addr.to_owned()).await?;
+    let address = client
+        .get_schema_insert_address(Id {
             id: event.schema_id.to_string(),
         })
         .await?
         .into_inner()
-        .topic;
+        .address;
     cache
         .lock()
         .unwrap_or_else(abort_on_poison)
-        .insert(event.schema_id, channel.clone());
+        .insert(event.schema_id, address.clone());
 
-    Ok(channel)
+    Ok(address)
 }
 
 async fn send_message(producer: &CommonPublisher, topic_name: &str, key: &str, payload: Vec<u8>) {

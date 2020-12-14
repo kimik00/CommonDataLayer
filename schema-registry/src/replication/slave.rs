@@ -1,10 +1,9 @@
 use super::{KafkaConfig, ReplicationEvent};
 use crate::db::SchemaDb;
 use anyhow::Context;
-use futures_util::stream::StreamExt;
 use log::{error, info, trace};
 use std::{process, sync::Arc};
-use tokio::{pin, sync::oneshot::Receiver};
+use tokio::{pin, stream::StreamExt, sync::oneshot::Receiver};
 use utils::messaging_system::{consumer::CommonConsumer, message::CommunicationMessage};
 
 pub async fn consume_kafka_topic(
@@ -69,8 +68,11 @@ async fn consume_message(
         ReplicationEvent::UpdateSchemaName { id, new_name } => {
             db.update_schema_name(id, new_name)?;
         }
-        ReplicationEvent::UpdateSchemaTopic { id, new_topic } => {
-            db.update_schema_topic(id, new_topic)?;
+        ReplicationEvent::UpdateSchemaInsertAddress {
+            id,
+            new_insert_address,
+        } => {
+            db.update_schema_insert_address(id, new_insert_address)?;
         }
         ReplicationEvent::UpdateSchemaQueryAddress {
             id,

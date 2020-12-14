@@ -1,4 +1,4 @@
-use schema_registry::types::SchemaType;
+use rpc::schema_registry::types::SchemaType;
 use semver::{Version, VersionReq};
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -50,8 +50,8 @@ pub enum SchemaAction {
         version: Option<VersionReq>,
     },
 
-    /// Get a schema's kafka topic from the registry.
-    GetTopic {
+    /// Get a schema's insert address from the registry.
+    GetInsertAddress {
         /// The id of the schema.
         #[structopt(short, long)]
         schema_id: Uuid,
@@ -83,11 +83,11 @@ pub enum SchemaAction {
         /// The name of the schema.
         #[structopt(short, long)]
         name: String,
-        /// The topic of the schema.
-        #[structopt(short, long, default_value = "")]
-        topic: String,
+        /// The insert address of the schema.
+        #[structopt(short, long)]
+        insert_address: String,
         /// The query address of the schema.
-        #[structopt(short, long, default_value = "")]
+        #[structopt(short, long)]
         query_address: String,
         /// The file containing the JSON Schema. If not provided,
         /// the schema will be read from stdin.
@@ -122,14 +122,14 @@ pub enum SchemaAction {
         name: String,
     },
 
-    /// Update a schema's topic in the registry.
-    SetTopic {
+    /// Update a schema's insert address in the registry.
+    SetInsertAddress {
         /// The id of the schema.
         #[structopt(short, long)]
         id: Uuid,
-        /// The new topic of the schema.
+        /// The new insert address of the schema.
         #[structopt(short, long)]
-        topic: String,
+        insert_address: String,
     },
 
     /// Update a schema's query address in the registry.

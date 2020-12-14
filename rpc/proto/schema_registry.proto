@@ -1,17 +1,17 @@
 syntax = "proto3";
-package registry;
+package schema_registry;
 
 service SchemaRegistry {
     rpc AddSchema (NewSchema) returns (Id);
     rpc AddSchemaVersion (NewSchemaVersion) returns (Empty);
     rpc UpdateSchemaName (SchemaNameUpdate) returns (Empty);
-    rpc UpdateSchemaTopic (SchemaTopicUpdate) returns (Empty);
+    rpc UpdateSchemaInsertAddress (SchemaInsertAddressUpdate) returns (Empty);
     rpc UpdateSchemaQueryAddress (SchemaQueryAddressUpdate) returns (Empty);
     rpc UpdateSchemaType (SchemaTypeUpdate) returns (Empty);
     rpc AddViewToSchema (NewSchemaView) returns (Id);
     rpc UpdateView (UpdatedView) returns (View);
     rpc GetSchema (VersionedId) returns (SchemaDefinition);
-    rpc GetSchemaTopic (Id) returns (SchemaTopic);
+    rpc GetSchemaInsertAddress (Id) returns (SchemaInsertAddress);
     rpc GetSchemaQueryAddress (Id) returns (SchemaQueryAddress);
     rpc GetSchemaVersions (Id) returns (SchemaVersions);
     rpc GetSchemaType(Id) returns (SchemaType);
@@ -28,7 +28,7 @@ message NewSchema {
     string id = 1;
     string name = 2;
     string query_address = 3;
-    string topic_name = 4;
+    string insert_address = 4;
     string definition = 5;
     SchemaType.Type schema_type = 6;
 }
@@ -44,9 +44,9 @@ message SchemaNameUpdate {
     string name = 2;
 }
 
-message SchemaTopicUpdate {
+message SchemaInsertAddressUpdate {
     string id = 1;
-    string topic = 2;
+    string address = 2;
 }
 
 message SchemaTypeUpdate {
@@ -56,7 +56,7 @@ message SchemaTypeUpdate {
 
 message SchemaQueryAddressUpdate {
     string id = 1;
-    string query_address = 2;
+    string address = 2;
 }
 
 message NewSchemaView {
@@ -88,8 +88,8 @@ message SchemaDefinition {
     string definition = 2;
 }
 
-message SchemaTopic {
-    string topic = 1;
+message SchemaInsertAddress {
+    string address = 1;
 }
 
 message SchemaQueryAddress {

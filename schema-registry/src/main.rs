@@ -1,11 +1,11 @@
 use anyhow::Context;
 use chrono::{DateTime, Utc};
 use indradb::SledDatastore;
+use rpc::schema_registry::schema_registry_server::SchemaRegistryServer;
 use schema_registry::{
     error::RegistryError,
+    grpc::SchemaRegistryImpl,
     replication::{KafkaConfig, ReplicationRole},
-    rpc::schema::schema_registry_server::SchemaRegistryServer,
-    rpc::SchemaRegistryImpl,
 };
 use serde::Deserialize;
 use std::fs::File;
@@ -44,8 +44,8 @@ pub async fn main() -> anyhow::Result<()> {
     let data_store = SledDatastore::new(&config.db_name).map_err(RegistryError::ConnectionError)?;
     let registry = SchemaRegistryImpl::new(
         data_store,
-        config.replication_role,
         replication_config,
+        config.replication_role,
         config.pod_name,
     )
     .await?;

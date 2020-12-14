@@ -1,8 +1,8 @@
 #![feature(drain_filter)]
 
-use crate::rpc::schema::schema_registry_client::SchemaRegistryClient;
-use crate::rpc::schema::{Empty, Id, ValueToValidate};
 use error::RegistryClientError;
+use rpc::schema_registry::schema_registry_client::SchemaRegistryClient;
+use rpc::schema_registry::{Empty, Id, ValueToValidate};
 use serde_json::Value;
 use tonic::{transport::Channel, Request};
 use types::storage::vertices::View;
@@ -10,8 +10,8 @@ use uuid::Uuid;
 
 pub mod db;
 pub mod error;
+pub mod grpc;
 pub mod replication;
-pub mod rpc;
 pub mod schema;
 pub mod types;
 

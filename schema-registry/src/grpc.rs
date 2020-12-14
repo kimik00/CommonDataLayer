@@ -8,28 +8,22 @@ use crate::{
 };
 use anyhow::Context;
 use indradb::SledDatastore;
-use schema::{
+use rpc::schema_registry::{
     schema_registry_server::SchemaRegistry, Empty, Errors, Id, NewSchemaView, PodName,
-    SchemaNameUpdate, SchemaNames, SchemaQueryAddress, SchemaQueryAddressUpdate, SchemaTopic,
-    SchemaTopicUpdate, SchemaTypeUpdate, SchemaVersions, SchemaViews, UpdatedView, ValueToValidate,
-    VersionedId,
+    SchemaInsertAddress, SchemaInsertAddressUpdate, SchemaNameUpdate, SchemaNames,
+    SchemaQueryAddress, SchemaQueryAddressUpdate, SchemaTypeUpdate, SchemaVersions, SchemaViews,
+    UpdatedView, ValueToValidate, VersionedId,
 };
 use semver::Version;
 use semver::VersionReq;
 use serde_json::Value;
 use std::sync::{Arc, Mutex};
 use tonic::{Request, Response, Status};
-use utils::messaging_system::metadata_fetcher::KafkaMetadataFetcher;
 use utils::{abort_on_poison, messaging_system::Result};
 use uuid::Uuid;
 
-pub mod schema {
-    tonic::include_proto!("registry");
-}
-
 pub struct SchemaRegistryImpl {
     pub db: Arc<SchemaDb>,
-    pub mq_metadata: Arc<KafkaMetadataFetcher>,
     pub replication: Arc<Mutex<ReplicationState>>,
     pub pod_name: Option<String>,
 }
@@ -37,15 +31,13 @@ pub struct SchemaRegistryImpl {
 impl SchemaRegistryImpl {
     pub async fn new(
         db: SledDatastore,
-        replication_role: ReplicationRole,
         kafka_config: KafkaConfig,
+        replication_role: ReplicationRole,
         pod_name: Option<String>,
     ) -> Result<Self> {
         let child_db = Arc::new(SchemaDb { db });
-        let mq_metadata = Arc::new(KafkaMetadataFetcher::new(&kafka_config.brokers).await?);
         let schema_registry = Self {
             db: child_db.clone(),
-            mq_metadata,
             replication: Arc::new(Mutex::new(ReplicationState::new(kafka_config, child_db))),
             pod_name,
         };
@@ -84,7 +76,7 @@ impl SchemaRegistryImpl {
 impl SchemaRegistry for SchemaRegistryImpl {
     async fn add_schema(
         &self,
-        request: Request<schema::NewSchema>,
+        request: Request<rpc::schema_registry::NewSchema>,
     ) -> Result<Response<Id>, Status> {
         let request = request.into_inner();
         let schema_id = parse_optional_uuid(&request.id)?;
@@ -94,18 +86,9 @@ impl SchemaRegistry for SchemaRegistryImpl {
             name: request.name,
             definition: parse_json(&request.definition)?,
             query_address: request.query_address,
-            insert_address: request.topic_name,
+            insert_address: request.insert_address,
             schema_type,
         };
-
-        if !self
-            .mq_metadata
-            .topic_exists(&new_schema.kafka_topic)
-            .await
-            .map_err(RegistryError::from)?
-        {
-            return Err(RegistryError::NoTopic(new_schema.kafka_topic).into());
-        }
 
         let new_id = self.db.add_schema(new_schema.clone(), schema_id)?;
         self.replicate_message(ReplicationEvent::AddSchema {
@@ -120,7 +103,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
 
     async fn add_schema_version(
         &self,
-        request: Request<schema::NewSchemaVersion>,
+        request: Request<rpc::schema_registry::NewSchemaVersion>,
     ) -> Result<Response<Empty>, Status> {
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.id)?;
@@ -156,27 +139,18 @@ impl SchemaRegistry for SchemaRegistryImpl {
         Ok(Response::new(Empty {}))
     }
 
-    async fn update_schema_topic(
+    async fn update_schema_insert_address(
         &self,
-        request: Request<SchemaTopicUpdate>,
+        request: Request<SchemaInsertAddressUpdate>,
     ) -> Result<Response<Empty>, Status> {
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.id)?;
 
-        if !self
-            .mq_metadata
-            .topic_exists(&request.topic)
-            .await
-            .map_err(RegistryError::from)?
-        {
-            return Err(RegistryError::NoTopic(request.topic).into());
-        }
-
         self.db
-            .update_schema_topic(schema_id, request.topic.clone())?;
-        self.replicate_message(ReplicationEvent::UpdateSchemaTopic {
+            .update_schema_insert_address(schema_id, request.address.clone())?;
+        self.replicate_message(ReplicationEvent::UpdateSchemaInsertAddress {
             id: schema_id,
-            new_topic: request.topic,
+            new_insert_address: request.address,
         });
 
         Ok(Response::new(Empty {}))
@@ -190,10 +164,10 @@ impl SchemaRegistry for SchemaRegistryImpl {
         let schema_id = parse_uuid(&request.id)?;
 
         self.db
-            .update_schema_query_address(schema_id, request.query_address.clone())?;
+            .update_schema_query_address(schema_id, request.address.clone())?;
         self.replicate_message(ReplicationEvent::UpdateSchemaQueryAddress {
             id: schema_id,
-            new_query_address: request.query_address,
+            new_query_address: request.address,
         });
 
         Ok(Response::new(Empty {}))
@@ -245,7 +219,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
     async fn update_view(
         &self,
         request: Request<UpdatedView>,
-    ) -> Result<Response<schema::View>, Status> {
+    ) -> Result<Response<rpc::schema_registry::View>, Status> {
         let request = request.into_inner();
         let view_id = parse_uuid(&request.id)?;
         let view = View {
@@ -256,7 +230,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         let old_view = self.db.update_view(view_id, view.clone())?;
         self.replicate_message(ReplicationEvent::UpdateView { id: view_id, view });
 
-        Ok(Response::new(schema::View {
+        Ok(Response::new(rpc::schema_registry::View {
             name: old_view.name,
             jmespath: old_view.jmespath,
         }))
@@ -265,7 +239,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
     async fn get_schema(
         &self,
         request: Request<VersionedId>,
-    ) -> Result<Response<schema::SchemaDefinition>, Status> {
+    ) -> Result<Response<rpc::schema_registry::SchemaDefinition>, Status> {
         let request = request.into_inner();
         let id = VersionedUuid::new(
             parse_uuid(&request.id)?,
@@ -273,21 +247,21 @@ impl SchemaRegistry for SchemaRegistryImpl {
         );
         let definition = self.db.get_schema_definition(&id)?;
 
-        Ok(Response::new(schema::SchemaDefinition {
+        Ok(Response::new(rpc::schema_registry::SchemaDefinition {
             version: definition.version.to_string(),
             definition: serialize_json(&definition.definition)?,
         }))
     }
 
-    async fn get_schema_topic(
+    async fn get_schema_insert_address(
         &self,
         request: Request<Id>,
-    ) -> Result<Response<SchemaTopic>, Status> {
+    ) -> Result<Response<SchemaInsertAddress>, Status> {
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.id)?;
-        let topic = self.db.get_schema_topic(schema_id)?;
+        let address = self.db.get_schema_insert_address(schema_id)?;
 
-        Ok(Response::new(SchemaTopic { topic }))
+        Ok(Response::new(SchemaInsertAddress { address }))
     }
 
     async fn get_schema_query_address(
@@ -318,19 +292,24 @@ impl SchemaRegistry for SchemaRegistryImpl {
     async fn get_schema_type(
         &self,
         request: Request<Id>,
-    ) -> Result<Response<schema::SchemaType>, Status> {
+    ) -> Result<Response<rpc::schema_registry::SchemaType>, Status> {
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.id)?;
         let schema_type = self.db.get_schema_type(schema_id)? as i32;
 
-        Ok(Response::new(schema::SchemaType { schema_type }))
+        Ok(Response::new(rpc::schema_registry::SchemaType {
+            schema_type,
+        }))
     }
 
-    async fn get_view(&self, request: Request<Id>) -> Result<Response<schema::View>, Status> {
+    async fn get_view(
+        &self,
+        request: Request<Id>,
+    ) -> Result<Response<rpc::schema_registry::View>, Status> {
         let view_id = parse_uuid(&request.into_inner().id)?;
         let view = self.db.get_view(view_id)?;
 
-        Ok(Response::new(schema::View {
+        Ok(Response::new(rpc::schema_registry::View {
             name: view.name,
             jmespath: view.jmespath,
         }))
@@ -363,7 +342,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
                 .map(|(view_id, view)| {
                     (
                         view_id.to_string(),
-                        schema::View {
+                        rpc::schema_registry::View {
                             name: view.name,
                             jmespath: view.jmespath,
                         },

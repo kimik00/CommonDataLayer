@@ -1,9 +1,10 @@
 use crate::{
     db::SchemaDb,
     types::storage::vertices::View,
-    types::{NewSchema, NewSchemaVersion, SchemaType},
+    types::{NewSchema, NewSchemaVersion},
 };
 use log::info;
+use rpc::schema_registry::types::SchemaType;
 use serde::{Deserialize, Serialize};
 use std::{
     sync::{mpsc, Arc},
@@ -29,9 +30,9 @@ pub enum ReplicationEvent {
         id: Uuid,
         new_name: String,
     },
-    UpdateSchemaTopic {
+    UpdateSchemaInsertAddress {
         id: Uuid,
-        new_topic: String,
+        new_insert_address: String,
     },
     UpdateSchemaQueryAddress {
         id: Uuid,
