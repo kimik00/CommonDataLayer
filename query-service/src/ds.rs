@@ -1,5 +1,3 @@
-// This service is not supported atm
-// TODO: Move to Query-service-ts, integrate to its api and deploy such service.
 use crate::schema::{query_server::Query, ObjectIds, RawStatement, SchemaId, ValueBytes, ValueMap};
 use anyhow::Context;
 use bb8::{Pool, PooledConnection};
