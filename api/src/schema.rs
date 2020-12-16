@@ -7,8 +7,7 @@ use juniper::{
 use rpc::schema_registry::Empty;
 use uuid::Uuid;
 
-pub type Schema =
-    RootNode<'static, Query<Context>, EmptyMutation<Context>, EmptySubscription<Context>>;
+pub type Schema = RootNode<'static, Query, EmptyMutation<Context>, EmptySubscription<Context>>;
 
 pub fn schema() -> Schema {
     Schema::new(Query, EmptyMutation::new(), EmptySubscription::new())
