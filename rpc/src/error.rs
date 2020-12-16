@@ -15,3 +15,10 @@ pub enum ClientError {
         source: Status,
     },
 }
+
+pub fn registry_error(error: Status) -> ClientError {
+    ClientError::QueryError {
+        service: "schema registry",
+        source: error,
+    }
+}

@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "api",
     "blob-store",
     "benchmarking",
     "cdl-cli",
