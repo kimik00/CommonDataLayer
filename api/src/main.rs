@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use config::Config;
 use context::Context;
+use structopt::StructOpt;
 use warp::{http::Response, Filter};
 
 #[tokio::main]
@@ -16,12 +17,16 @@ async fn main() {
     let homepage = warp::path::end().map(|| {
         Response::builder()
             .header("content-type", "text/html")
-            .body(format!(
+            .body(
                 "<html><h1>juniper_warp</h1><div>visit <a href=\"/graphiql\">/graphiql</a></html>"
-            ))
+                    .to_string(),
+            )
     });
 
-    let state = warp::any().map(move || Context::new(config.clone()));
+    let state = warp::any().map({
+        let config = config.clone();
+        move || Context::new(config.clone())
+    });
     let graphql_filter = juniper_warp::make_graphql_filter(crate::schema::schema(), state.boxed());
 
     warp::serve(

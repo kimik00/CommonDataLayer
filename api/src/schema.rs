@@ -1,8 +1,7 @@
 use crate::context::Context;
 use crate::error::ApiResult;
 use juniper::{
-    graphql_object, EmptyMutation, EmptySubscription, FieldResult, GraphQLEnum, GraphQLObject,
-    RootNode,
+    graphql_object, EmptyMutation, EmptySubscription, FieldResult, GraphQLObject, RootNode,
 };
 use rpc::schema_registry::Empty;
 use uuid::Uuid;

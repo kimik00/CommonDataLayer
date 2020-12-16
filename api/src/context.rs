@@ -24,9 +24,9 @@ impl Context {
         }
     }
 
-    pub async fn connect_to_registry<'a>(
-        &'a self,
-    ) -> Result<Conn<'a, SchemaRegistryClient<Channel>>, ApiError> {
+    pub async fn connect_to_registry(
+        &self,
+    ) -> Result<Conn<'_, SchemaRegistryClient<Channel>>, ApiError> {
         let mut conn = self.registry_conn.lock().await;
 
         if conn.is_none() {
@@ -37,9 +37,9 @@ impl Context {
         Ok(Conn { conn })
     }
 
-    pub async fn connect_to_query_router<'a>(
-        &'a self,
-    ) -> Result<Conn<'a, QueryServiceClient<Channel>>, ApiError> {
+    pub async fn connect_to_query_router(
+        &self,
+    ) -> Result<Conn<'_, QueryServiceClient<Channel>>, ApiError> {
         let mut conn = self.query_router_conn.lock().await;
 
         if conn.is_none() {
