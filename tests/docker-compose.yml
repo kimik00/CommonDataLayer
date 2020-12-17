@@ -31,3 +31,71 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_PASSWORD: "1234"
+
+  victoria_metrics:
+    image: victoriametrics/victoria-metrics:latest
+    ports:
+      - "50105:50105"
+      - "8428:8428"
+    command: -opentsdbHTTPListenAddr :50105 -retentionPeriod 0
+
+  schema_registry:
+    image: cdl-schema-registry:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=schema-registry
+        - ENV=DEV
+    command: /bin/schema-registry
+    ports:
+      - "50101:50101"
+    environment:
+      DB_NAME: "/var/data/schema"
+      REPLICATION_ROLE: "master"
+      KAFKA_BROKERS: "kafka:9093"
+      KAFKA_GROUP_ID: "schema_registry"
+      KAFKA_TOPICS: "cdl.schema_registry.internal"
+      INPUT_PORT: "50101"
+      RUST_LOG: info,schema_registry=trace
+    depends_on:
+      - kafka
+
+
+
+  postgres_query:
+    image: cdl-query-service:latest
+    command: "/bin/query-service postgres"
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=query-service
+        - ENV=DEV
+
+    ports:
+      - "50102:50102"
+    environment:
+      POSTGRES_USERNAME: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DBNAME: postgres
+      POSTGRES_SCHEMA: cdl
+      INPUT_PORT: 50102
+      RUST_LOG: info,query_service=trace
+
+  victoria_query:
+    image: cdl-query-service-ts:latest
+    command: "/bin/query-service-ts victoria"
+    ports:
+      - "50104:50104"
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=query-service-ts
+    environment:
+      VICTORIA_QUERY_URL: "http://victoria_metrics:8428/api/v1/query_range"
+      INPUT_PORT: 50104
+      RUST_LOG: debug
