@@ -1,28 +1,28 @@
 use crate::context::Context;
-use crate::error::ApiResult;
+use crate::error::Result;
 use juniper::{
     graphql_object, EmptyMutation, EmptySubscription, FieldResult, GraphQLObject, RootNode,
 };
 use rpc::schema_registry::Empty;
 use uuid::Uuid;
 
-pub type Schema = RootNode<'static, Query, EmptyMutation<Context>, EmptySubscription<Context>>;
+pub type GQLSchema = RootNode<'static, Query, EmptyMutation<Context>, EmptySubscription<Context>>;
 
-pub fn schema() -> Schema {
-    Schema::new(Query, EmptyMutation::new(), EmptySubscription::new())
+pub fn schema() -> GQLSchema {
+    GQLSchema::new(Query, EmptyMutation::new(), EmptySubscription::new())
 }
 
 #[derive(GraphQLObject)]
-pub struct CdlSchemaName {
-    pub name: String,
+pub struct Schema {
     pub id: Uuid,
+    pub name: String,
 }
 
 pub struct Query;
 
 #[graphql_object(context = Context)]
 impl Query {
-    async fn schema_names(context: &Context) -> FieldResult<Vec<CdlSchemaName>> {
+    async fn schemas(context: &Context) -> FieldResult<Vec<Schema>> {
         let mut conn = context.connect_to_registry().await?;
         let schema_names = conn
             .get_all_schema_names(Empty {})
@@ -33,12 +33,12 @@ impl Query {
         Ok(schema_names
             .names
             .into_iter()
-            .map(|(name, id)| {
-                Ok(CdlSchemaName {
+            .map(|(id, name)| {
+                Ok(Schema {
                     name,
                     id: id.parse()?,
                 })
             })
-            .collect::<ApiResult<Vec<CdlSchemaName>>>()?)
+            .collect::<Result<_>>()?)
     }
 }

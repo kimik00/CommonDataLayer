@@ -12,6 +12,7 @@ use warp::{http::Response, Filter};
 
 #[tokio::main]
 async fn main() {
+    env_logger::init();
     let config = Arc::new(Config::from_args());
 
     let homepage = warp::path::end().map(|| {

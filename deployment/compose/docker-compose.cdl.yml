@@ -14,6 +14,15 @@ services:
     environment:
       KAFKA_CREATE_TOPICS: "cdl.data.input:1:1,cdl.document.input:1:1,cdl.reports:1:1,cdl.timeseries.input:1:1"
 
+  victoria_metrics:
+    image: victoriametrics/victoria-metrics:latest
+    ports:
+      - "50105:50105"
+      - "8428:8428"
+    command: -opentsdbHTTPListenAddr :50105 -retentionPeriod 0
+    volumes:
+      - ./docker-volume/victoria_metrics/db:/victoria-metrics-data
+
   schema_registry:
     image: cdl-schema-registry:latest
     build:
@@ -32,7 +41,10 @@ services:
       KAFKA_GROUP_ID: "schema_registry"
       KAFKA_TOPICS: "cdl.schema_registry.internal"
       INPUT_PORT: "50101"
+      IMPORT_FILE: "/var/data/initial-schema.json"
       RUST_LOG: info,schema_registry=trace
+    volumes:
+      - ./initial-schema.json:/var/data/initial-schema.json
     depends_on:
       - kafka
 
@@ -161,3 +173,19 @@ services:
       VICTORIA_QUERY_URL: "http://victoria_metrics:8428/api/v1"
       INPUT_PORT: 50104
       RUST_LOG: debug
+
+  web_api:
+    image: cdl-api:latest
+    command: "/bin/api"
+    ports:
+      - "50106:50106"
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=api
+    environment:
+      INPUT_PORT: 50106
+      RUST_LOG: debug
+      SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
+      QUERY_ROUTER_ADDR: "http://query_router:50103"

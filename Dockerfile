@@ -28,6 +28,7 @@ COPY query-service-ts/Cargo.toml query-service-ts/Cargo.toml
 COPY rpc/Cargo.toml rpc/Cargo.toml
 COPY schema-registry/Cargo.toml schema-registry/Cargo.toml
 COPY utils/Cargo.toml utils/Cargo.toml
+COPY api/Cargo.toml api/Cargo.toml
 
 RUN cargo fetch
 RUN rustup target add x86_64-unknown-linux-musl
@@ -46,6 +47,7 @@ COPY query-service-ts/ query-service-ts/
 COPY rpc/ rpc/
 COPY schema-registry/ schema-registry/
 COPY utils/ utils/
+COPY api/ api/
 
 ARG ENV
 ARG BIN
