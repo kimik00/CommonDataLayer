@@ -35,9 +35,8 @@ services:
   victoria_metrics:
     image: victoriametrics/victoria-metrics:latest
     ports:
-      - "50105:50105"
       - "8428:8428"
-    command: -opentsdbHTTPListenAddr :50105 -retentionPeriod 0
+    command: -retentionPeriod 0 -search.latencyOffset=0s
 
   schema_registry:
     image: cdl-schema-registry:latest
