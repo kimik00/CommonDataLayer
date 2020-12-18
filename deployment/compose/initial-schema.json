@@ -1,0 +1,24 @@
+{
+    "schemas": {
+        "2cfad3c7-411a-11eb-8000-000000000000": {
+            "name": "new schema",
+            "kafka_topic":"cdl.document.input",
+            "query_address":"http://postgres_query:50102",
+            "schema_type":"DocumentStorage"
+        }
+    },
+    "definitions": {
+        "2cfad4e7-411a-11eb-8001-000000000000": {
+            "definition": { "a": "number" }
+        }
+    },
+    "views": {},
+    "schema_definitions": [
+        {
+            "schema_id": "2cfad3c7-411a-11eb-8000-000000000000",
+            "definition_id": "2cfad4e7-411a-11eb-8001-000000000000",
+            "version": "1.0.0"
+        }
+    ],
+    "schema_views": []
+}

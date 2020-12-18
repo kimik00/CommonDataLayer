@@ -22,3 +22,4 @@ tokio       = { version = "0.2", default-features = false, features = ["sync", "
 uuid        = { version = "0.8", features = ["v4", "serde"] }
 juniper     = { version = "0.15", features = ["uuid"] }
 juniper_warp            = "0.6"
+futures                 = "0.3"

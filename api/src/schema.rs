@@ -1,44 +1,66 @@
-use crate::context::Context;
-use crate::error::Result;
-use juniper::{
-    graphql_object, EmptyMutation, EmptySubscription, FieldResult, GraphQLObject, RootNode,
-};
-use rpc::schema_registry::Empty;
+use crate::error::{Error, Result};
+use std::convert::TryFrom;
 use uuid::Uuid;
 
-pub type GQLSchema = RootNode<'static, Query, EmptyMutation<Context>, EmptySubscription<Context>>;
-
-pub fn schema() -> GQLSchema {
-    GQLSchema::new(Query, EmptyMutation::new(), EmptySubscription::new())
-}
-
-#[derive(GraphQLObject)]
+#[derive(juniper::GraphQLObject)]
 pub struct Schema {
     pub id: Uuid,
     pub name: String,
+    pub topic: String,
+    pub query_address: String,
+
+    #[graphql(name = "type")]
+    pub schema_type: SchemaType,
+
+    pub views: Vec<View>,
+    pub definitions: Vec<Definition>,
 }
 
-pub struct Query;
+#[derive(Debug, juniper::GraphQLEnum, Clone, Copy)]
+pub enum SchemaType {
+    DocumentStorage,
+    Timeseries,
+}
 
-#[graphql_object(context = Context)]
-impl Query {
-    async fn schemas(context: &Context) -> FieldResult<Vec<Schema>> {
-        let mut conn = context.connect_to_registry().await?;
-        let schema_names = conn
-            .get_all_schema_names(Empty {})
-            .await
-            .map_err(rpc::error::registry_error)?
-            .into_inner();
-
-        Ok(schema_names
-            .names
-            .into_iter()
-            .map(|(id, name)| {
-                Ok(Schema {
-                    name,
-                    id: id.parse()?,
-                })
-            })
-            .collect::<Result<_>>()?)
+impl TryFrom<i32> for SchemaType {
+    type Error = Error;
+    fn try_from(i: i32) -> Result<Self> {
+        match i {
+            0 => Ok(Self::DocumentStorage),
+            1 => Ok(Self::Timeseries),
+            i => Err(Error::InvalidSchemaType(i)),
+        }
     }
+}
+
+impl Into<i32> for SchemaType {
+    fn into(self) -> i32 {
+        match self {
+            Self::DocumentStorage => 0,
+            Self::Timeseries => 1,
+        }
+    }
+}
+
+#[derive(juniper::GraphQLObject)]
+pub struct Definition {
+    pub definition: String,
+    pub version: String,
+}
+
+#[derive(juniper::GraphQLObject)]
+pub struct View {
+    pub id: Uuid,
+    pub name: String,
+    pub expression: String,
+}
+
+#[derive(juniper::GraphQLInputObject)]
+pub struct NewSchema {
+    pub name: String,
+    pub query_address: String,
+    pub topic: String,
+    pub definition: String,
+    #[graphql(name = "type")]
+    pub schema_type: SchemaType,
 }

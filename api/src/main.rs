@@ -1,6 +1,7 @@
 pub mod config;
 pub mod context;
 pub mod error;
+pub mod queries;
 pub mod schema;
 
 use std::sync::Arc;
@@ -28,7 +29,7 @@ async fn main() {
         let config = config.clone();
         move || Context::new(config.clone())
     });
-    let graphql_filter = juniper_warp::make_graphql_filter(crate::schema::schema(), state.boxed());
+    let graphql_filter = juniper_warp::make_graphql_filter(crate::queries::schema(), state.boxed());
 
     warp::serve(
         warp::get()

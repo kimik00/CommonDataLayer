@@ -1,7 +1,7 @@
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
-use crate::{config::Config, error::ApiError};
+use crate::{config::Config, error::Error};
 use rpc::query_service::query_service_client::QueryServiceClient;
 use rpc::schema_registry::schema_registry_client::SchemaRegistryClient;
 use rpc::tonic::transport::Channel;
@@ -26,7 +26,7 @@ impl Context {
 
     pub async fn connect_to_registry(
         &self,
-    ) -> Result<Conn<'_, SchemaRegistryClient<Channel>>, ApiError> {
+    ) -> Result<Conn<'_, SchemaRegistryClient<Channel>>, Error> {
         let mut conn = self.registry_conn.lock().await;
 
         if conn.is_none() {
@@ -39,7 +39,7 @@ impl Context {
 
     pub async fn connect_to_query_router(
         &self,
-    ) -> Result<Conn<'_, QueryServiceClient<Channel>>, ApiError> {
+    ) -> Result<Conn<'_, QueryServiceClient<Channel>>, Error> {
         let mut conn = self.query_router_conn.lock().await;
 
         if conn.is_none() {
