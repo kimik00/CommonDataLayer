@@ -5,6 +5,7 @@ use futures::stream::{StreamExt, TryStreamExt};
 use juniper::{graphql_object, EmptySubscription, FieldResult, RootNode};
 use rpc::schema_registry::Empty;
 use std::convert::TryInto;
+use uuid::Uuid;
 
 pub type GQLSchema = RootNode<'static, Query, QueryMut, EmptySubscription<Context>>;
 
@@ -52,6 +53,27 @@ impl QueryMut {
             schema_type,
             definitions: vec![],
             views: vec![],
+        })
+    }
+
+    async fn add_view(context: &Context, schema_id: Uuid, new_view: NewView) -> FieldResult<View> {
+        let NewView { name, expression } = new_view.clone();
+        let mut conn = context.connect_to_registry().await?;
+        let id = conn
+            .add_view_to_schema(rpc::schema_registry::NewSchemaView {
+                schema_id: schema_id.to_string(),
+                view_id: "".into(),
+                name,
+                jmespath: expression,
+            })
+            .await
+            .map_err(rpc::error::registry_error)?
+            .into_inner()
+            .id;
+        Ok(View {
+            id: id.parse()?,
+            name: new_view.name,
+            expression: new_view.expression,
         })
     }
 }
@@ -124,7 +146,22 @@ impl Query {
                     });
                 }
 
-                let views = vec![];
+                let views = conn
+                    .get_all_views_of_schema(rpc_id.clone())
+                    .await
+                    .map_err(rpc::error::registry_error)?
+                    .into_inner()
+                    .views
+                    .into_iter()
+                    .map(|(id, view)| {
+                        Ok(View {
+                            id: id.parse()?,
+                            name: view.name,
+                            expression: view.jmespath,
+                        })
+                    })
+                    .collect::<Result<_>>()?;
+
                 Ok(Schema {
                     name,
                     id: id.parse()?,

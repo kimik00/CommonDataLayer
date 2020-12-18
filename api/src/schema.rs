@@ -64,3 +64,9 @@ pub struct NewSchema {
     #[graphql(name = "type")]
     pub schema_type: SchemaType,
 }
+
+#[derive(Clone, juniper::GraphQLInputObject)]
+pub struct NewView {
+    pub name: String,
+    pub expression: String,
+}
