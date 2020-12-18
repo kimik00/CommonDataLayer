@@ -9,10 +9,10 @@ use crate::{
 use anyhow::Context;
 use indradb::SledDatastore;
 use rpc::schema_registry::{
-    schema_registry_server::SchemaRegistry, Empty, Errors, Id, NewSchemaView, PodName,
+    schema_registry_server::SchemaRegistry, Empty, Errors, Id, NewSchemaView, PodName, Schema,
     SchemaNameUpdate, SchemaNames, SchemaQueryAddress, SchemaQueryAddressUpdate, SchemaTopic,
-    SchemaTopicUpdate, SchemaTypeUpdate, SchemaVersions, SchemaViews, UpdatedView, ValueToValidate,
-    VersionedId,
+    SchemaTopicUpdate, SchemaTypeUpdate, SchemaVersions, SchemaViews, Schemas, UpdatedView,
+    ValueToValidate, VersionedId,
 };
 use semver::Version;
 use semver::VersionReq;
@@ -334,6 +334,27 @@ impl SchemaRegistry for SchemaRegistryImpl {
         Ok(Response::new(rpc::schema_registry::View {
             name: view.name,
             jmespath: view.jmespath,
+        }))
+    }
+
+    async fn get_all_schemas(&self, _request: Request<Empty>) -> Result<Response<Schemas>, Status> {
+        let schemas = self.db.get_all_schemas()?;
+
+        Ok(Response::new(Schemas {
+            schemas: schemas
+                .into_iter()
+                .map(|(schema_id, schema)| {
+                    (
+                        schema_id.to_string(),
+                        Schema {
+                            name: schema.name,
+                            topic: schema.kafka_topic,
+                            query_address: schema.query_address,
+                            schema_type: schema.schema_type as i32,
+                        },
+                    )
+                })
+                .collect(),
         }))
     }
 

@@ -37,6 +37,7 @@ impl Context {
         Ok(Conn { conn })
     }
 
+    //TODO: Use it. Query router or query service? Decide
     pub async fn connect_to_query_router(
         &self,
     ) -> Result<Conn<'_, QueryServiceClient<Channel>>, Error> {

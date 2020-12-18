@@ -2,18 +2,12 @@ use crate::error::{Error, Result};
 use std::convert::TryFrom;
 use uuid::Uuid;
 
-#[derive(juniper::GraphQLObject)]
 pub struct Schema {
     pub id: Uuid,
     pub name: String,
     pub topic: String,
     pub query_address: String,
-
-    #[graphql(name = "type")]
     pub schema_type: SchemaType,
-
-    pub views: Vec<View>,
-    pub definitions: Vec<Definition>,
 }
 
 #[derive(Debug, juniper::GraphQLEnum, Clone, Copy)]
@@ -46,6 +40,7 @@ impl Into<i32> for SchemaType {
 pub struct Definition {
     pub definition: String,
     pub version: String,
+    pub queried_version: String,
 }
 
 #[derive(juniper::GraphQLObject)]
@@ -69,4 +64,10 @@ pub struct NewSchema {
 pub struct NewView {
     pub name: String,
     pub expression: String,
+}
+
+#[derive(juniper::GraphQLInputObject)]
+pub struct NewVersion {
+    pub version: String,
+    pub definition: String,
 }

@@ -317,6 +317,21 @@ impl<D: Datastore> SchemaDb<D> {
         Ok(old_view)
     }
 
+    pub fn get_all_schemas(&self) -> RegistryResult<HashMap<Uuid, Schema>> {
+        let conn = self.connect()?;
+        let all_schemas = conn
+            .get_all_vertex_properties(RangeVertexQuery::new(std::u32::MAX).t(Schema::db_type()))?;
+
+        all_schemas
+            .into_iter()
+            .map(|props| {
+                let schema_id = props.vertex.id;
+                Schema::from_properties(props)
+                    .ok_or_else(|| MalformedError::MalformedSchema(schema_id).into())
+            })
+            .collect()
+    }
+
     pub fn get_all_schema_names(&self) -> RegistryResult<HashMap<Uuid, String>> {
         let conn = self.connect()?;
         let all_names = conn.get_vertex_properties(

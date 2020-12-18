@@ -16,6 +16,7 @@ service SchemaRegistry {
     rpc GetSchemaVersions (Id) returns (SchemaVersions);
     rpc GetSchemaType(Id) returns (SchemaType);
     rpc GetView (Id) returns (View);
+    rpc GetAllSchemas (Empty) returns (Schemas);
     rpc GetAllSchemaNames (Empty) returns (SchemaNames);
     rpc GetAllViewsOfSchema (Id) returns (SchemaViews);
     rpc ValidateValue (ValueToValidate) returns (Errors);
@@ -31,6 +32,13 @@ message NewSchema {
     string topic = 4;
     string definition = 5;
     SchemaType.Type schema_type = 6;
+}
+
+message Schema {
+    string name = 1;
+    string topic = 2;
+    string query_address = 3;
+    SchemaType.Type schema_type = 4;
 }
 
 message NewSchemaVersion {
@@ -102,6 +110,10 @@ message Id {
 
 message SchemaVersions {
     repeated string versions = 1;
+}
+
+message Schemas {
+    map<string, Schema> schemas = 1;
 }
 
 message SchemaNames {
