@@ -8,7 +8,8 @@ from tests.common.cdl_env import CdlEnv
 from tests.common.query_router import QueryRouter
 from tests.common.schema_registry import SchemaRegistry
 from tests.common.query_service import QueryService
-from tests.common.config import PostgresConfig
+from tests.common.query_service_ts import QueryServiceTs
+from tests.common.config import PostgresConfig, VictoriaMetricsConfig
 from tests.common.postgres import connect_to_postgres, insert_test_data
 
 
@@ -106,7 +107,7 @@ def test_endpoint_single_ds():
 
 
 def test_endpoint_single_ts():
-    with CdlEnv('.') as env:
+    with CdlEnv('.') as env, QueryServiceTs('50104', VictoriaMetricsConfig()) as _:
         data, expected = load_case('query_ts', 'query_router')
 
         with QueryRouter('1024', '50103', 'http://localhost:50101') as qr:

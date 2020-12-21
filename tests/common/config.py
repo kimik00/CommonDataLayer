@@ -46,3 +46,13 @@ class KafkaReportConfig:
             "REPORT_BROKER": self.brokers,
             "REPORT_TOPIC": self.topic,
         }
+
+
+class VictoriaMetricsConfig:
+    def __init__(self, url='http://localhost:8428/api/v1/query_range'):
+        self.url = url
+
+    def to_dict(self):
+        return {
+            "VICTORIA_QUERY_URL": self.url,
+        }

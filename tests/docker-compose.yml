@@ -37,18 +37,3 @@ services:
     ports:
       - "8428:8428"
     command: -retentionPeriod 0 -search.latencyOffset=0s
-
-  victoria_query:
-    image: cdl-query-service-ts:latest
-    command: "/bin/query-service-ts victoria"
-    ports:
-      - "50104:50104"
-    build:
-      context: ../..
-      dockerfile: Dockerfile
-      args:
-        - BIN=query-service-ts
-    environment:
-      VICTORIA_QUERY_URL: "http://victoria_metrics:8428/api/v1/query_range"
-      INPUT_PORT: 50104
-      RUST_LOG: debug
