@@ -7,6 +7,7 @@ from tests.common import load_case
 from tests.common.cdl_env import CdlEnv
 from tests.common.query_router import QueryRouter
 from tests.common.schema_registry import SchemaRegistry
+from tests.common.query_service import QueryService
 from tests.common.config import PostgresConfig
 from tests.common.postgres import connect_to_postgres, insert_test_data
 
@@ -27,7 +28,8 @@ def insert_test_metrics(data):
 
 @pytest.fixture(params=['non_existing', 'single_schema', 'multiple_schemas'])
 def prepare(request):
-    with CdlEnv('.', postgres_config=PostgresConfig()) as env:
+    with CdlEnv('.', postgres_config=PostgresConfig()) as env, QueryService('50102', PostgresConfig()) as _:
+
         data, expected = load_case(request.param, 'query_router')
 
         with QueryRouter('1024', '50103', 'http://localhost:50101') as qr:
@@ -68,7 +70,7 @@ def test_endpoint_multiple(prepare):
 
 
 def test_endpoint_single_ds():
-    with CdlEnv('.', postgres_config=PostgresConfig()) as env:
+    with CdlEnv('.', postgres_config=PostgresConfig()) as env, QueryService('50102', PostgresConfig()) as _:
         data, expected = load_case('query_ds', 'query_router')
 
         with QueryRouter('1024', '50103', 'http://localhost:50101') as qr:
@@ -163,7 +165,7 @@ def test_endpoint_single_ts():
 
 
 def test_endpoint_schema_ds():
-    with CdlEnv('.', postgres_config=PostgresConfig()) as env:
+    with CdlEnv('.', postgres_config=PostgresConfig()) as env, QueryService('50102', PostgresConfig()) as _:
         data, expected = load_case('query_ds_by_schema', 'query_router')
 
         with QueryRouter('1024', '50103', 'http://localhost:50101') as qr:

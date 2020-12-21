@@ -38,28 +38,6 @@ services:
       - "8428:8428"
     command: -retentionPeriod 0 -search.latencyOffset=0s
 
-  postgres_query:
-    image: cdl-query-service:latest
-    command: "/bin/query-service postgres"
-    build:
-      context: ../..
-      dockerfile: Dockerfile
-      args:
-        - BIN=query-service
-        - ENV=DEV
-
-    ports:
-      - "50102:50102"
-    environment:
-      POSTGRES_USERNAME: postgres
-      POSTGRES_PASSWORD: 1234
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_DBNAME: postgres
-      POSTGRES_SCHEMA: cdl
-      INPUT_PORT: 50102
-      RUST_LOG: info,query_service=trace
-
   victoria_query:
     image: cdl-query-service-ts:latest
     command: "/bin/query-service-ts victoria"
