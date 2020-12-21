@@ -17,6 +17,7 @@ pub struct QueryMut;
 #[graphql_object(context = Context)]
 impl QueryMut {
     async fn add_schema(context: &Context, new: NewSchema) -> FieldResult<Schema> {
+        log::debug!("add schema {:?}", new);
         let mut conn = context.connect_to_registry().await?;
 
         let NewSchema {
@@ -58,6 +59,11 @@ impl QueryMut {
         schema_id: Uuid,
         new_version: NewVersion,
     ) -> FieldResult<Definition> {
+        log::debug!(
+            "add schema definition for {:?} - {:?}",
+            schema_id,
+            new_version
+        );
         let mut conn = context.connect_to_registry().await?;
 
         let NewVersion {
@@ -81,6 +87,8 @@ impl QueryMut {
     }
 
     async fn add_view(context: &Context, schema_id: Uuid, new_view: NewView) -> FieldResult<View> {
+        log::debug!("add view for {} - {:?}", schema_id, new_view);
+
         let NewView { name, expression } = new_view.clone();
         let mut conn = context.connect_to_registry().await?;
         let id = conn
@@ -99,6 +107,64 @@ impl QueryMut {
             name: new_view.name,
             expression: new_view.expression,
         })
+    }
+
+    async fn update_schema(
+        context: &Context,
+        schema_id: Uuid,
+        update: UpdateSchema,
+    ) -> FieldResult<Option<Schema>> {
+        log::debug!("update schema for {} - {:?}", schema_id, update);
+
+        let mut conn = context.connect_to_registry().await?;
+
+        let UpdateSchema {
+            name,
+            query_address,
+            topic,
+            schema_type,
+        } = update;
+
+        if let Some(name) = name {
+            conn.update_schema_name(rpc::schema_registry::SchemaNameUpdate {
+                id: schema_id.to_string(),
+                name,
+            })
+            .await
+            .map_err(rpc::error::registry_error)?;
+        }
+
+        if let Some(address) = query_address {
+            conn.update_schema_query_address(rpc::schema_registry::SchemaQueryAddressUpdate {
+                id: schema_id.to_string(),
+                address,
+            })
+            .await
+            .map_err(rpc::error::registry_error)?;
+        }
+
+        if let Some(topic) = topic {
+            conn.update_schema_topic(rpc::schema_registry::SchemaTopicUpdate {
+                id: schema_id.to_string(),
+                topic,
+            })
+            .await
+            .map_err(rpc::error::registry_error)?;
+        }
+
+        if let Some(schema_type) = schema_type {
+            let schema_type: i32 = schema_type.into();
+            conn.update_schema_type(rpc::schema_registry::SchemaTypeUpdate {
+                id: schema_id.to_string(),
+                schema_type,
+            })
+            .await
+            .map_err(rpc::error::registry_error)?;
+        }
+
+        drop(conn);
+
+        get_schema(context, schema_id).await
     }
 }
 
@@ -187,7 +253,12 @@ pub struct Query;
 
 #[graphql_object(context = Context)]
 impl Query {
+    async fn schema(context: &Context, id: Uuid) -> FieldResult<Option<Schema>> {
+        get_schema(context, id).await
+    }
+
     async fn schemas(context: &Context) -> FieldResult<Vec<Schema>> {
+        log::debug!("get all schemas");
         let mut conn = context.connect_to_registry().await?;
         let schemas = conn
             .get_all_schemas(Empty {})
@@ -209,4 +280,38 @@ impl Query {
 
         Ok(schemas)
     }
+}
+
+async fn get_schema(context: &Context, id: Uuid) -> FieldResult<Option<Schema>> {
+    log::debug!("get schema: {:?}", id);
+    let mut conn = context.connect_to_registry().await?;
+    let schema = conn
+        .get_all_schemas(Empty {}) // TODO: Add GRPC route to schema_registry which takes schema for uuid.
+        // Right now we have a route for `get_schema` but it returns SchemaDefinition, not metadata.
+        .await
+        .map_err(rpc::error::registry_error)?
+        .into_inner()
+        .schemas
+        .into_iter()
+        .map(|(schema_id, schema)| {
+            let schema_id: Uuid = schema_id.parse()?;
+            if schema_id == id {
+                Ok(Some(Schema {
+                    id,
+                    name: schema.name,
+                    topic: schema.topic,
+                    query_address: schema.query_address,
+                    schema_type: schema.schema_type.try_into()?,
+                }))
+            } else {
+                Ok(None)
+            }
+        })
+        .find(|schema: &Result<Option<Schema>>| matches!(schema, Ok(None)))
+        .transpose()?
+        .flatten();
+
+    log::debug!("schema: {:?}", schema);
+
+    Ok(schema)
 }

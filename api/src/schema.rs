@@ -2,6 +2,7 @@ use crate::error::{Error, Result};
 use std::convert::TryFrom;
 use uuid::Uuid;
 
+#[derive(Debug)]
 pub struct Schema {
     pub id: Uuid,
     pub name: String,
@@ -36,21 +37,21 @@ impl Into<i32> for SchemaType {
     }
 }
 
-#[derive(juniper::GraphQLObject)]
+#[derive(Debug, juniper::GraphQLObject)]
 pub struct Definition {
     pub definition: String,
     pub version: String,
     pub queried_version: String,
 }
 
-#[derive(juniper::GraphQLObject)]
+#[derive(Debug, juniper::GraphQLObject)]
 pub struct View {
     pub id: Uuid,
     pub name: String,
     pub expression: String,
 }
 
-#[derive(juniper::GraphQLInputObject)]
+#[derive(Debug, juniper::GraphQLInputObject)]
 pub struct NewSchema {
     pub name: String,
     pub query_address: String,
@@ -60,14 +61,23 @@ pub struct NewSchema {
     pub schema_type: SchemaType,
 }
 
-#[derive(Clone, juniper::GraphQLInputObject)]
+#[derive(Debug, Clone, juniper::GraphQLInputObject)]
 pub struct NewView {
     pub name: String,
     pub expression: String,
 }
 
-#[derive(juniper::GraphQLInputObject)]
+#[derive(Debug, juniper::GraphQLInputObject)]
 pub struct NewVersion {
     pub version: String,
     pub definition: String,
+}
+
+#[derive(Debug, juniper::GraphQLInputObject)]
+pub struct UpdateSchema {
+    pub name: Option<String>,
+    pub query_address: Option<String>,
+    pub topic: Option<String>,
+    #[graphql(name = "type")]
+    pub schema_type: Option<SchemaType>,
 }
