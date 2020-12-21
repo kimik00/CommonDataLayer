@@ -1,3 +1,4 @@
+import time
 import json
 import pytest
 import requests
@@ -12,9 +13,18 @@ from tests.common.config import PostgresConfig
 from tests.common.postgres import connect_to_postgres, insert_test_data
 
 
+def insert_test_document(db, data, sid):
+    for entry in data:
+        entry['schema_id'] = sid
+        # print(entry)
+    # print(data)
+    insert_test_data(db, data)
+
+
 def insert_test_metrics(data):
-    line = "\n".join(data)
-    requests.post("http://localhost:8428/write", line)
+    lines = "\n".join(data)
+    # print(lines)
+    requests.post("http://localhost:8428/write", lines)
 
 
 def registry_create_schema(url, name, topic, query, body, schema_type):
@@ -31,6 +41,10 @@ def query_get_single(url, schema_id, object_id, body):
 
 def query_get_multiple(url, schema_id, object_ids):
     return requests.get(f"{url}/multiple/{object_ids}", headers={'SCHEMA_ID': schema_id})
+
+
+def query_get_schema(url, schema_id):
+    return requests.get(f"{url}/schema", headers={'SCHEMA_ID': schema_id})
 
 
 @pytest.fixture(params=['non_existing', 'single_schema', 'multiple_schemas'])
@@ -150,3 +164,86 @@ def test_endpoint_single_ts():
 
             print(data)
             print(expected)
+
+
+def test_endpoint_schema_ds():
+    with CdlEnv('.', postgres_config=PostgresConfig()) as env:
+        data, expected = load_case('query_ds_by_schema', 'query_router')
+
+        with QueryRouter('1024', '50103', 'http://localhost:50101') as _:
+
+            sid = registry_create_schema('localhost:50101',
+                                         'test_schema',
+                                         'cdl.document.input',
+                                         'http://localhost:50102',
+                                         '{}',
+                                         0)
+
+            db = connect_to_postgres(env.postgres_config)
+            insert_test_document(db, data, sid)
+            db.close()
+
+            # Request QR for data
+            response = query_get_schema('http://localhost:50103', sid)
+
+            json1 = json.dumps(response.json(), sort_keys=True)
+            json2 = json.dumps(expected, sort_keys=True)
+            assert json1 == json2
+            # assert response.json() == expected
+
+            print(data)
+            print(expected)
+
+# Endpoint needs to be fixed
+# def test_endpoint_schema_ts():
+#     with CdlEnv('.') as env:
+#         data, expected = load_case('query_ts_by_schema', 'query_router')
+#         with QueryRouter('1024', '50103', 'http://localhost:50101') as _:
+
+#             sid = registry_create_schema('localhost:50101',
+#                                          'test_schema',
+#                                          'cdl.document.input',
+#                                          'http://localhost:50104',
+#                                          '{}',
+#                                          1)
+
+#             data = [entry.replace(
+#                 "{value_replaced_by_test}", sid) for entry in data]
+
+#             insert_test_metrics(data)
+
+#             time.sleep(5)
+#             # Line protocol requires timestamps in [ns]
+#             # Victoriametrics stores them internally in [ms]
+#             # but PromQL queries use "unix timestamps" which are in [s]
+#             start = 1608216910
+#             end = 1608216919
+#             step = 1
+#             req_body = {"from": str(start), "to": str(end), "step": str(step)}
+
+#             # print(req_body)
+
+#             # export = requests.get("http://localhost:8428/api/v1/export",
+#             #                       params={'match': '{__name__!=""}'})
+#             # print(export.text)
+
+#             q = requests.get("http://localhost:8428/api/v1/query_range",
+#                              params={
+#                                  'query': '{__name__=~\"sid_.*\"}'.replace("sid", sid),
+#                                  "start": start,
+#                                  "end": end,
+#                                  "step": step
+#                              })
+#             print(q.links)
+#             print(q.text)
+
+#             # Request QR for data
+#             response = query_get_schema('http://localhost:50103', sid)
+
+#             json1 = json.dumps(response.json(), sort_keys=True)
+#             json2 = json.dumps(expected, sort_keys=True)
+#             assert json1 == json2
+#             # assert response.json() == expected
+
+#             print(data)
+#             print(expected)
