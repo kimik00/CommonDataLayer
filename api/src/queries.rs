@@ -109,12 +109,34 @@ impl QueryMut {
         })
     }
 
+    async fn update_view(context: &Context, id: Uuid, update: UpdateView) -> FieldResult<View> {
+        log::debug!("update view for {} - {:?}", id, update);
+
+        let mut conn = context.connect_to_registry().await?;
+
+        let UpdateView { name, expression } = update;
+
+        conn.update_view(rpc::schema_registry::UpdatedView {
+            id: id.to_string(),
+            name: name.clone(),
+            jmespath: expression.clone(),
+        })
+        .await
+        .map_err(rpc::error::registry_error)?;
+
+        Ok(View {
+            id,
+            name,
+            expression,
+        })
+    }
+
     async fn update_schema(
         context: &Context,
-        schema_id: Uuid,
+        id: Uuid,
         update: UpdateSchema,
     ) -> FieldResult<Option<Schema>> {
-        log::debug!("update schema for {} - {:?}", schema_id, update);
+        log::debug!("update schema for {} - {:?}", id, update);
 
         let mut conn = context.connect_to_registry().await?;
 
@@ -127,7 +149,7 @@ impl QueryMut {
 
         if let Some(name) = name {
             conn.update_schema_name(rpc::schema_registry::SchemaNameUpdate {
-                id: schema_id.to_string(),
+                id: id.to_string(),
                 name,
             })
             .await
@@ -136,7 +158,7 @@ impl QueryMut {
 
         if let Some(address) = query_address {
             conn.update_schema_query_address(rpc::schema_registry::SchemaQueryAddressUpdate {
-                id: schema_id.to_string(),
+                id: id.to_string(),
                 address,
             })
             .await
@@ -145,7 +167,7 @@ impl QueryMut {
 
         if let Some(topic) = topic {
             conn.update_schema_topic(rpc::schema_registry::SchemaTopicUpdate {
-                id: schema_id.to_string(),
+                id: id.to_string(),
                 topic,
             })
             .await
@@ -155,7 +177,7 @@ impl QueryMut {
         if let Some(schema_type) = schema_type {
             let schema_type: i32 = schema_type.into();
             conn.update_schema_type(rpc::schema_registry::SchemaTypeUpdate {
-                id: schema_id.to_string(),
+                id: id.to_string(),
                 schema_type,
             })
             .await
@@ -164,24 +186,29 @@ impl QueryMut {
 
         drop(conn);
 
-        get_schema(context, schema_id).await
+        get_schema(context, id).await
     }
 }
 
 #[graphql_object(context = Context)]
+/// Schema is the format in which data is to be sent to the Common Data Layer.
 impl Schema {
+    /// Random UUID assigned on creation
     fn id(&self) -> &Uuid {
         &self.id
     }
 
+    /// The name is not required to be unique among all schemas (as `id` is the identifier)
     fn name(&self) -> &str {
         &self.name
     }
 
+    /// Kafka topic to which data is inserted by data-router.
     fn topic(&self) -> &str {
         &self.topic
     }
 
+    /// Address of the query service responsible for retrieving data from DB
     fn query_address(&self) -> &str {
         &self.query_address
     }
@@ -191,6 +218,8 @@ impl Schema {
         self.schema_type
     }
 
+    /// All definitions connected to this schema.
+    /// Each schema can have only one active definition, under latest version but also contains history for backward compability.
     async fn definitions(&self, context: &Context) -> FieldResult<Vec<Definition>> {
         let mut conn = context.connect_to_registry().await?;
         let id = self.id.to_string();
@@ -224,6 +253,7 @@ impl Schema {
         Ok(definitions)
     }
 
+    /// All views connected to this schema
     async fn views(&self, context: &Context) -> FieldResult<Vec<View>> {
         let mut conn = context.connect_to_registry().await?;
         let id = self.id.to_string();
@@ -253,10 +283,13 @@ pub struct Query;
 
 #[graphql_object(context = Context)]
 impl Query {
+    //TODO: Remove Option<> - return error on missing id.
+    /// Return single schema for given id
     async fn schema(context: &Context, id: Uuid) -> FieldResult<Option<Schema>> {
         get_schema(context, id).await
     }
 
+    /// Return all schemas in database
     async fn schemas(context: &Context) -> FieldResult<Vec<Schema>> {
         log::debug!("get all schemas");
         let mut conn = context.connect_to_registry().await?;
@@ -280,14 +313,32 @@ impl Query {
 
         Ok(schemas)
     }
+
+    /// Return single view for given id
+    async fn view(context: &Context, id: Uuid) -> FieldResult<View> {
+        log::debug!("get view: {:?}", id);
+        let mut conn = context.connect_to_registry().await?;
+        let view = conn
+            .get_view(rpc::schema_registry::Id { id: id.to_string() })
+            .await
+            .map_err(rpc::error::registry_error)?
+            .into_inner();
+
+        Ok(View {
+            id,
+            name: view.name,
+            expression: view.jmespath,
+        })
+    }
 }
 
+// TODO: Add GRPC route to schema_registry which takes schema for uuid.
+// Right now we have a route for `get_schema` but it returns SchemaDefinition, not metadata.
 async fn get_schema(context: &Context, id: Uuid) -> FieldResult<Option<Schema>> {
     log::debug!("get schema: {:?}", id);
     let mut conn = context.connect_to_registry().await?;
     let schema = conn
-        .get_all_schemas(Empty {}) // TODO: Add GRPC route to schema_registry which takes schema for uuid.
-        // Right now we have a route for `get_schema` but it returns SchemaDefinition, not metadata.
+        .get_all_schemas(Empty {})
         .await
         .map_err(rpc::error::registry_error)?
         .into_inner()
