@@ -28,7 +28,7 @@ def assert_json(lhs, rhs):
 
 
 @pytest.fixture(params=['non_existing', 'single_schema', 'multiple_schemas'])
-def prepare(request):
+def prepare(request, tmp_path):
     with CdlEnv('.', postgres_config=PostgresConfig()) as env, QueryService('50102', PostgresConfig()) as _:
 
         data, expected = load_case(request.param, 'query_router')
@@ -38,7 +38,7 @@ def prepare(request):
             insert_test_data(db, data['database_setup'])
             db.close()
 
-            with SchemaRegistry("/tmp/schema",
+            with SchemaRegistry(str(tmp_path),
                                 "master",
                                 "localhost:9093",
                                 "schema_registry",
@@ -63,7 +63,7 @@ def test_endpoint_multiple(prepare):
     assert_json(response.json(), expected)
 
 
-def test_endpoint_single_ds():
+def test_endpoint_single_ds(tmp_path):
     with CdlEnv('.', postgres_config=PostgresConfig()) as env, QueryService('50102', PostgresConfig()) as _:
         data, expected = load_case('query_ds', 'query_router')
 
@@ -73,7 +73,7 @@ def test_endpoint_single_ds():
             insert_test_data(db, data['database_setup'])
             db.close()
 
-            with SchemaRegistry("/tmp/schema",
+            with SchemaRegistry(str(tmp_path),
                                 "master",
                                 "localhost:9093",
                                 "schema_registry",
@@ -92,7 +92,7 @@ def test_endpoint_single_ds():
                 assert_json(response.json(), expected)
 
 
-def test_endpoint_single_ts():
+def test_endpoint_single_ts(tmp_path):
     with CdlEnv('.') as env, QueryServiceTs('50104', VictoriaMetricsConfig()) as _:
         data, expected = load_case('query_ts', 'query_router')
 
@@ -100,7 +100,7 @@ def test_endpoint_single_ts():
 
             insert_test_metrics(data['database_setup'])
 
-            with SchemaRegistry("/tmp/schema",
+            with SchemaRegistry(str(tmp_path),
                                 "master",
                                 "localhost:9093",
                                 "schema_registry",
@@ -129,13 +129,13 @@ def test_endpoint_single_ts():
                 assert_json(response.json(), expected)
 
 
-def test_endpoint_schema_ds():
+def test_endpoint_schema_ds(tmp_path):
     with CdlEnv('.', postgres_config=PostgresConfig()) as env, QueryService('50102', PostgresConfig()) as _:
         data, expected = load_case('query_ds_by_schema', 'query_router')
 
         with QueryRouter('1024', '50103', 'http://localhost:50101') as qr:
 
-            with SchemaRegistry("/tmp/schema",
+            with SchemaRegistry(str(tmp_path),
                                 "master",
                                 "localhost:9093",
                                 "schema_registry",

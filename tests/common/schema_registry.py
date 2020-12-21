@@ -1,6 +1,5 @@
 import os
 import subprocess
-import shutil
 import time
 
 import grpc
@@ -36,7 +35,6 @@ class SchemaRegistry:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.svc.kill()
-        shutil.rmtree(self.db_name)
 
     def create_schema(self, name, topic, query, body, schema_type):
         with grpc.insecure_channel(f"localhost:{self.input_port}") as channel:
