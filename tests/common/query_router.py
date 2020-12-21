@@ -1,7 +1,6 @@
 import os
 import subprocess
-
-from tests.common.config import PostgresConfig
+import requests
 
 EXE = os.getenv('QUERY_ROUTER_EXE') or 'query-router'
 
@@ -20,7 +19,16 @@ class QueryRouter:
         env.update(SCHEMA_REGISTRY_ADDR=self.schema_registry_addr)
 
         self.svc = subprocess.Popen([EXE], env=env)
-        return self.svc
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.svc.kill()
+
+    def query_get_single(self, schema_id, object_id, body):
+        return requests.post(f"http://localhost:{self.input_port}/single/{object_id}", body, headers={'SCHEMA_ID': schema_id})
+
+    def query_get_multiple(self, schema_id, object_ids):
+        return requests.get(f"http://localhost:{self.input_port}/multiple/{object_ids}", headers={'SCHEMA_ID': schema_id})
+
+    def query_get_schema(self, schema_id):
+        return requests.get(f"http://localhost:{self.input_port}/schema", headers={'SCHEMA_ID': schema_id})

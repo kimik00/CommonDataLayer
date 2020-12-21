@@ -35,18 +35,6 @@ def registry_create_schema(url, name, topic, query, body, schema_type):
         return resp.id
 
 
-def query_get_single(url, schema_id, object_id, body):
-    return requests.post(f"{url}/single/{object_id}", body, headers={'SCHEMA_ID': schema_id})
-
-
-def query_get_multiple(url, schema_id, object_ids):
-    return requests.get(f"{url}/multiple/{object_ids}", headers={'SCHEMA_ID': schema_id})
-
-
-def query_get_schema(url, schema_id):
-    return requests.get(f"{url}/schema", headers={'SCHEMA_ID': schema_id})
-
-
 @pytest.fixture(params=['non_existing', 'single_schema', 'multiple_schemas'])
 def prepare(request):
     with CdlEnv('.', postgres_config=PostgresConfig()) as env:
@@ -54,7 +42,7 @@ def prepare(request):
 
         db = connect_to_postgres(env.postgres_config)
 
-        with QueryRouter('1024', '50103', 'http://localhost:50101') as _:
+        with QueryRouter('1024', '50103', 'http://localhost:50101') as qr:
             insert_test_data(db, data['database_setup'])
 
             sid = registry_create_schema('localhost:50101',
@@ -64,17 +52,16 @@ def prepare(request):
                                          '{}',
                                          0)
 
-            yield data, sid, expected
+            yield qr, data, sid, expected
 
         db.close()
 
 
 def test_endpoint_multiple(prepare):
-    data, sid, expected = prepare
+    qr, data, sid, expected = prepare
 
     # Request QR for data
-    response = query_get_multiple(
-        'http://localhost:50103', sid, data['query_for'])
+    response = qr.query_get_multiple(sid, data['query_for'])
 
     json1 = json.dumps(response.json(), sort_keys=True)
     json2 = json.dumps(expected, sort_keys=True)
@@ -89,7 +76,7 @@ def test_endpoint_single_ds():
     with CdlEnv('.', postgres_config=PostgresConfig()) as env:
         data, expected = load_case('query_ds', 'query_router')
 
-        with QueryRouter('1024', '50103', 'http://localhost:50101') as _:
+        with QueryRouter('1024', '50103', 'http://localhost:50101') as qr:
 
             db = connect_to_postgres(env.postgres_config)
             insert_test_data(db, data['database_setup'])
@@ -103,8 +90,7 @@ def test_endpoint_single_ds():
                                          0)
 
             # Request QR for data
-            response = query_get_single(
-                'http://localhost:50103', sid, data['query_for'], "{}")
+            response = qr.query_get_single(sid, data['query_for'], "{}")
 
             json1 = json.dumps(response.json(), sort_keys=True)
             json2 = json.dumps(expected, sort_keys=True)
@@ -119,7 +105,7 @@ def test_endpoint_single_ts():
     with CdlEnv('.') as env:
         data, expected = load_case('query_ts', 'query_router')
 
-        with QueryRouter('1024', '50103', 'http://localhost:50101') as _:
+        with QueryRouter('1024', '50103', 'http://localhost:50101') as qr:
 
             insert_test_metrics(data['database_setup'])
 
@@ -154,8 +140,8 @@ def test_endpoint_single_ts():
             # print(q.text)
 
             # Request QR for data
-            response = query_get_single(
-                'http://localhost:50103', sid, data['query_for'], json.dumps(req_body))
+            response = qr.query_get_single(
+                sid, data['query_for'], json.dumps(req_body))
 
             json1 = json.dumps(response.json(), sort_keys=True)
             json2 = json.dumps(expected, sort_keys=True)
@@ -170,7 +156,7 @@ def test_endpoint_schema_ds():
     with CdlEnv('.', postgres_config=PostgresConfig()) as env:
         data, expected = load_case('query_ds_by_schema', 'query_router')
 
-        with QueryRouter('1024', '50103', 'http://localhost:50101') as _:
+        with QueryRouter('1024', '50103', 'http://localhost:50101') as qr:
 
             sid = registry_create_schema('localhost:50101',
                                          'test_schema',
@@ -184,7 +170,7 @@ def test_endpoint_schema_ds():
             db.close()
 
             # Request QR for data
-            response = query_get_schema('http://localhost:50103', sid)
+            response = qr.query_get_schema(sid)
 
             json1 = json.dumps(response.json(), sort_keys=True)
             json2 = json.dumps(expected, sort_keys=True)
