@@ -38,30 +38,6 @@ services:
       - "8428:8428"
     command: -retentionPeriod 0 -search.latencyOffset=0s
 
-  schema_registry:
-    image: cdl-schema-registry:latest
-    build:
-      context: ../..
-      dockerfile: Dockerfile
-      args:
-        - BIN=schema-registry
-        - ENV=DEV
-    command: /bin/schema-registry
-    ports:
-      - "50101:50101"
-    environment:
-      DB_NAME: "/var/data/schema"
-      REPLICATION_ROLE: "master"
-      KAFKA_BROKERS: "kafka:9093"
-      KAFKA_GROUP_ID: "schema_registry"
-      KAFKA_TOPICS: "cdl.schema_registry.internal"
-      INPUT_PORT: "50101"
-      RUST_LOG: info,schema_registry=trace
-    depends_on:
-      - kafka
-
-
-
   postgres_query:
     image: cdl-query-service:latest
     command: "/bin/query-service postgres"
