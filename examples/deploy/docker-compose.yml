@@ -132,6 +132,7 @@ services:
       KAFKA_INPUT_GROUP_ID: "victoria_command"
       KAFKA_INPUT_BROKERS: "kafka:9093"
       KAFKA_INPUT_TOPIC: "cdl.timeseries.input"
+      INGESTION_METHOD: KAFKA
       VICTORIA_METRICS_OUTPUT_URL: http://victoria_metrics:8428
       REPORT_BROKER: "kafka:9093"
       REPORT_TOPIC: "cdl.reports"

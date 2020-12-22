@@ -21,11 +21,11 @@ def test_endpoint_single_document_storage(prepare_document_storage_env):
 
 
 def test_endpoint_single_timeseries(prepare_timeseries_env):
-    qr, sid = prepare_timeseries_env
+    env, qr, sid = prepare_timeseries_env
     data, expected = load_case('single/query_ts', 'query_router')
 
     lines = "\n".join(data['database_setup'])
-    requests.post("http://localhost:8428/write", lines)
+    requests.post(env.victoria_metrics_config.database_url + "/write", lines)
     time.sleep(1)  # Ensure that 'search.latencyOffset' passed
 
     # Line protocol requires timestamps in [ns]

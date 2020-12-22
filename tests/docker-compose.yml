@@ -36,5 +36,4 @@ services:
     image: victoriametrics/victoria-metrics:latest
     ports:
       - "8428:8428"
-      - "12345:12345"
-    command: -retentionPeriod 0 -search.latencyOffset=1s -httpListenAddr=:12345
+    command: -retentionPeriod 0 -search.latencyOffset=1s

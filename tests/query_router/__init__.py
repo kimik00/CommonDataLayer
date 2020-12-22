@@ -1,7 +1,7 @@
 import json
 import pytest
 
-from tests.common.cdl_env import CdlEnv
+from tests.common.cdl_env import cdl_env
 from tests.common.config import PostgresConfig, VictoriaMetricsConfig
 from tests.common.query_router import QueryRouter
 from tests.common.query_service import QueryService
@@ -15,7 +15,7 @@ def assert_json(lhs, rhs):
 
 @pytest.fixture
 def prepare_env(tmp_path):
-    with CdlEnv('.', postgres_config=PostgresConfig()) as env:
+    with cdl_env('.', postgres_config=PostgresConfig()) as env:
         with QueryRouter('1024', '50103', 'http://localhost:50101') as qr:
             with SchemaRegistry(str(tmp_path),
                                 "master",
@@ -48,4 +48,4 @@ def prepare_timeseries_env(prepare_env):
                                'http://localhost:50104',
                                '{}',
                                1)
-        yield qr, sid
+        yield env, qr, sid
