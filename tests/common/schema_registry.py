@@ -3,8 +3,8 @@ import subprocess
 import time
 
 import grpc
-import tests.common.schema_registry_pb2 as pb2
-import tests.common.schema_registry_pb2_grpc as pb2_grpc
+import rpc.proto.schema_registry_pb2 as pb2
+import rpc.proto.schema_registry_pb2_grpc as pb2_grpc
 
 EXE = os.getenv('SCHEMA_REGISTRY_EXE') or 'schema-registry'
 
