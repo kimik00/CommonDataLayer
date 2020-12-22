@@ -11,6 +11,7 @@ service SchemaRegistry {
     rpc AddViewToSchema (NewSchemaView) returns (Id);
     rpc UpdateView (UpdatedView) returns (View);
     rpc GetSchema (VersionedId) returns (SchemaDefinition);
+    rpc GetSchemaInfo (Id) returns (Schema);
     rpc GetSchemaTopic (Id) returns (SchemaTopic);
     rpc GetSchemaQueryAddress (Id) returns (SchemaQueryAddress);
     rpc GetSchemaVersions (Id) returns (SchemaVersions);

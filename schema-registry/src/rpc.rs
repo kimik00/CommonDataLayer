@@ -275,6 +275,21 @@ impl SchemaRegistry for SchemaRegistryImpl {
         }))
     }
 
+    async fn get_schema_info(&self, request: Request<Id>) -> Result<Response<Schema>, Status> {
+        let request = request.into_inner();
+        let schema_id = parse_uuid(&request.id)?;
+        let schema = self.db.get_schema(schema_id)?;
+
+        let schema = Schema {
+            name: schema.name,
+            topic: schema.kafka_topic,
+            query_address: schema.query_address,
+            schema_type: schema.schema_type as i32,
+        };
+
+        Ok(Response::new(schema))
+    }
+
     async fn get_schema_topic(
         &self,
         request: Request<Id>,

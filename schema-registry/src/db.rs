@@ -101,6 +101,20 @@ impl<D: Datastore> SchemaDb<D> {
         }
     }
 
+    pub fn get_schema(&self, id: Uuid) -> RegistryResult<Schema> {
+        let conn = self.connect()?;
+        let props = conn
+            .get_all_vertex_properties(SpecificVertexQuery::single(id))?
+            .into_iter()
+            .next()
+            .ok_or(RegistryError::NoSchemaWithId(id))?;
+
+        let schema_id = props.vertex.id;
+        Schema::from_properties(props)
+            .map(|(_, schema)| schema)
+            .ok_or_else(|| MalformedError::MalformedSchema(schema_id).into())
+    }
+
     pub fn get_schema_definition(&self, id: &VersionedUuid) -> RegistryResult<SchemaDefinition> {
         let conn = self.connect()?;
         let (version, version_vertex_id) = self.get_latest_valid_schema_version(id)?;

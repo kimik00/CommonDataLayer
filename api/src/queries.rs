@@ -1,4 +1,4 @@
-use crate::context::Context;
+use crate::context::{Context, SchemaRegistryConn};
 use crate::error::Result;
 use crate::schema::*;
 use juniper::{graphql_object, EmptySubscription, FieldResult, RootNode};
@@ -135,7 +135,7 @@ impl QueryMut {
         context: &Context,
         id: Uuid,
         update: UpdateSchema,
-    ) -> FieldResult<Option<Schema>> {
+    ) -> FieldResult<Schema> {
         log::debug!("update schema for {} - {:?}", id, update);
 
         let mut conn = context.connect_to_registry().await?;
@@ -184,9 +184,7 @@ impl QueryMut {
             .map_err(rpc::error::registry_error)?;
         }
 
-        drop(conn);
-
-        get_schema(context, id).await
+        get_schema(&mut conn, id).await
     }
 }
 
@@ -283,10 +281,10 @@ pub struct Query;
 
 #[graphql_object(context = Context)]
 impl Query {
-    //TODO: Remove Option<> - return error on missing id.
     /// Return single schema for given id
-    async fn schema(context: &Context, id: Uuid) -> FieldResult<Option<Schema>> {
-        get_schema(context, id).await
+    async fn schema(context: &Context, id: Uuid) -> FieldResult<Schema> {
+        let mut conn = context.connect_to_registry().await?;
+        get_schema(&mut conn, id).await
     }
 
     /// Return all schemas in database
@@ -332,35 +330,21 @@ impl Query {
     }
 }
 
-// TODO: Add GRPC route to schema_registry which takes schema for uuid.
-// Right now we have a route for `get_schema` but it returns SchemaDefinition, not metadata.
-async fn get_schema(context: &Context, id: Uuid) -> FieldResult<Option<Schema>> {
+async fn get_schema(conn: &mut SchemaRegistryConn<'_>, id: Uuid) -> FieldResult<Schema> {
     log::debug!("get schema: {:?}", id);
-    let mut conn = context.connect_to_registry().await?;
     let schema = conn
-        .get_all_schemas(Empty {})
+        .get_schema_info(rpc::schema_registry::Id { id: id.to_string() })
         .await
         .map_err(rpc::error::registry_error)?
-        .into_inner()
-        .schemas
-        .into_iter()
-        .map(|(schema_id, schema)| {
-            let schema_id: Uuid = schema_id.parse()?;
-            if schema_id == id {
-                Ok(Some(Schema {
-                    id,
-                    name: schema.name,
-                    topic: schema.topic,
-                    query_address: schema.query_address,
-                    schema_type: schema.schema_type.try_into()?,
-                }))
-            } else {
-                Ok(None)
-            }
-        })
-        .find(|schema: &Result<Option<Schema>>| matches!(schema, Ok(None)))
-        .transpose()?
-        .flatten();
+        .into_inner();
+
+    let schema = Schema {
+        id,
+        name: schema.name,
+        topic: schema.topic,
+        query_address: schema.query_address,
+        schema_type: schema.schema_type.try_into()?,
+    };
 
     log::debug!("schema: {:?}", schema);
 

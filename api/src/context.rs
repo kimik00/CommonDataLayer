@@ -53,6 +53,8 @@ impl Context {
     }
 }
 
+pub type SchemaRegistryConn<'a> = Conn<'a, SchemaRegistryClient<Channel>>;
+
 pub struct Conn<'c, C> {
     conn: MutexGuard<'c, Option<C>>,
 }
