@@ -42,11 +42,8 @@ services:
       KAFKA_TOPICS: "cdl.schema_registry.internal"
       INPUT_PORT: "50101"
       IMPORT_FILE: "/var/data/schema.json"
-      #EXPORT_DIR: "/var/data/exported"
       RUST_LOG: info,schema_registry=trace
     volumes:
-      #- ./docker-volume/schema_registry/db:/var/data/schema
-      #- ./exported:/var/data/exported
       - ./initial-schema.json:/var/data/schema.json
     depends_on:
       - kafka

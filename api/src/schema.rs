@@ -34,11 +34,11 @@ impl TryFrom<i32> for SchemaType {
     }
 }
 
-impl Into<i32> for SchemaType {
-    fn into(self) -> i32 {
-        match self {
-            Self::DocumentStorage => 0,
-            Self::Timeseries => 1,
+impl From<SchemaType> for i32 {
+    fn from(st: SchemaType) -> Self {
+        match st {
+            SchemaType::DocumentStorage => 0,
+            SchemaType::Timeseries => 1,
         }
     }
 }
