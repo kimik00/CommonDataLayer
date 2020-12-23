@@ -1,6 +1,7 @@
 import time
 import pytest
 import requests
+from urllib.parse import urljoin
 
 from tests.query_router import *
 from tests.common import load_case
@@ -25,8 +26,9 @@ def test_endpoint_single_timeseries(prepare_timeseries_env):
     data, expected = load_case('single/query_ts', 'query_router')
 
     lines = "\n".join(data['database_setup'])
-    requests.post(env.victoria_metrics_config.database_url + "/write", lines)
-    time.sleep(1)  # Ensure that 'search.latencyOffset' passed
+    requests.post(
+        urljoin(env.victoria_metrics_config.database_url, "/write"), lines)
+    time.sleep(2)  # Ensure that 'search.latencyOffset' passed
 
     # Line protocol requires timestamps in [ns]
     # Victoriametrics stores them internally in [ms]

@@ -15,7 +15,7 @@ def assert_json(lhs, rhs):
 
 @pytest.fixture
 def prepare_env(tmp_path):
-    with cdl_env('.', postgres_config=PostgresConfig()) as env:
+    with cdl_env('.', postgres_config=PostgresConfig(), victoria_metrics_config=VictoriaMetricsConfig()) as env:
         with QueryRouter('1024', '50103', 'http://localhost:50101') as qr:
             with SchemaRegistry(str(tmp_path),
                                 "master",
