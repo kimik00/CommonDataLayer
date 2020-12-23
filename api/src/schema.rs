@@ -1,5 +1,4 @@
-use crate::error::{Error, Result};
-use std::convert::TryFrom;
+use num_derive::{FromPrimitive, ToPrimitive};
 use uuid::Uuid;
 
 #[derive(Debug)]
@@ -16,31 +15,11 @@ pub struct Schema {
     pub schema_type: SchemaType,
 }
 
-#[derive(Debug, juniper::GraphQLEnum, Clone, Copy)]
+#[derive(Debug, juniper::GraphQLEnum, Clone, Copy, FromPrimitive, ToPrimitive)]
 /// Schema type, describes what kind of query service and command service is going to be used, as timeseries databases are quite different than others.
 pub enum SchemaType {
-    DocumentStorage,
-    Timeseries,
-}
-
-impl TryFrom<i32> for SchemaType {
-    type Error = Error;
-    fn try_from(i: i32) -> Result<Self> {
-        match i {
-            0 => Ok(Self::DocumentStorage),
-            1 => Ok(Self::Timeseries),
-            i => Err(Error::InvalidSchemaType(i)),
-        }
-    }
-}
-
-impl From<SchemaType> for i32 {
-    fn from(st: SchemaType) -> Self {
-        match st {
-            SchemaType::DocumentStorage => 0,
-            SchemaType::Timeseries => 1,
-        }
-    }
+    DocumentStorage = 0,
+    Timeseries = 1,
 }
 
 #[derive(Debug, juniper::GraphQLObject)]

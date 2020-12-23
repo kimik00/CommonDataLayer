@@ -1,9 +1,12 @@
-use crate::context::{Context, SchemaRegistryConn};
 use crate::error::Result;
 use crate::schema::*;
+use crate::{
+    context::{Context, SchemaRegistryConn},
+    error::Error,
+};
 use juniper::{graphql_object, EmptySubscription, FieldResult, RootNode};
+use num_traits::{FromPrimitive, ToPrimitive};
 use rpc::schema_registry::Empty;
-use std::convert::TryInto;
 use uuid::Uuid;
 
 pub type GQLSchema = RootNode<'static, Query, QueryMut, EmptySubscription<Context>>;
@@ -28,7 +31,7 @@ impl QueryMut {
             schema_type,
         } = new;
 
-        let rpc_schema_type: i32 = schema_type.into();
+        let rpc_schema_type: i32 = schema_type.to_i32().unwrap(); // Unwrap because we for sure can build i32 from enum
 
         let id = conn
             .add_schema(rpc::schema_registry::NewSchema {
@@ -149,7 +152,7 @@ impl QueryMut {
             name,
             address,
             topic,
-            schema_type: schema_type.map(i32::from),
+            schema_type: schema_type.and_then(|s| s.to_i32()),
         })
         .await
         .map_err(rpc::error::registry_error)?;
@@ -274,7 +277,8 @@ impl Query {
                     name: schema.name,
                     topic: schema.topic,
                     query_address: schema.query_address,
-                    schema_type: schema.schema_type.try_into()?,
+                    schema_type: SchemaType::from_i32(schema.schema_type)
+                        .ok_or(Error::InvalidSchemaType(schema.schema_type))?,
                 })
             })
             .collect::<Result<_>>()?;
@@ -317,7 +321,8 @@ async fn get_schema(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<Sche
         name: schema.name,
         topic: schema.topic,
         query_address: schema.query_address,
-        schema_type: schema.schema_type.try_into()?,
+        schema_type: SchemaType::from_i32(schema.schema_type)
+            .ok_or(Error::InvalidSchemaType(schema.schema_type))?,
     };
 
     log::debug!("schema: {:?}", schema);
