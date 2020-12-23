@@ -289,7 +289,7 @@ impl Query {
     }
 }
 
-async fn get_view(conn: &mut SchemaRegistryConn<'_>, id: Uuid) -> FieldResult<View> {
+async fn get_view(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<View> {
     log::debug!("get view: {:?}", id);
     let view = conn
         .get_view(rpc::schema_registry::Id { id: id.to_string() })
@@ -304,7 +304,7 @@ async fn get_view(conn: &mut SchemaRegistryConn<'_>, id: Uuid) -> FieldResult<Vi
     })
 }
 
-async fn get_schema(conn: &mut SchemaRegistryConn<'_>, id: Uuid) -> FieldResult<Schema> {
+async fn get_schema(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<Schema> {
     log::debug!("get schema: {:?}", id);
     let schema = conn
         .get_schema_metadata(rpc::schema_registry::Id { id: id.to_string() })
