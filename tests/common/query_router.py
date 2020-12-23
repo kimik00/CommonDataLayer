@@ -6,7 +6,7 @@ EXE = os.getenv('QUERY_ROUTER_EXE') or 'query-router'
 
 
 class QueryRouter:
-    def __init__(self, cache_capacity, input_port, schema_registry_addr):
+    def __init__(self, schema_registry_addr, cache_capacity='1024', input_port='50103'):
         self.cache_capacity = cache_capacity
         self.input_port = input_port
         self.schema_registry_addr = schema_registry_addr

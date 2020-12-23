@@ -10,7 +10,13 @@ EXE = os.getenv('SCHEMA_REGISTRY_EXE') or 'schema-registry'
 
 
 class SchemaRegistry:
-    def __init__(self, db_name, replication_role, kafka_brokers, kafka_group_id, kafka_topics, input_port):
+    def __init__(self,
+                 db_name,
+                 kafka_brokers,
+                 kafka_group_id='schema_registry',
+                 kafka_topics='cdl.schema_registry.internal',
+                 replication_role='master',
+                 input_port='50101'):
         self.db_name = db_name
         self.replication_role = replication_role
         self.kafka_brokers = kafka_brokers
