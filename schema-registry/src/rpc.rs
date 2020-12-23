@@ -3,6 +3,7 @@ use crate::{
     error::RegistryError,
     replication::{KafkaConfig, ReplicationEvent, ReplicationRole, ReplicationState},
     types::DbExport,
+    types::ViewUpdate,
     types::{NewSchema, NewSchemaVersion, VersionedUuid},
     View,
 };
@@ -10,9 +11,8 @@ use anyhow::Context;
 use indradb::SledDatastore;
 use rpc::schema_registry::{
     schema_registry_server::SchemaRegistry, Empty, Errors, Id, NewSchemaView, PodName, Schema,
-    SchemaNameUpdate, SchemaNames, SchemaQueryAddress, SchemaQueryAddressUpdate, SchemaTopic,
-    SchemaTopicUpdate, SchemaTypeUpdate, SchemaVersions, SchemaViews, Schemas, UpdatedView,
-    ValueToValidate, VersionedId,
+    SchemaMetadataUpdate, SchemaNames, SchemaQueryAddress, SchemaTopic, SchemaVersions,
+    SchemaViews, Schemas, UpdatedView, ValueToValidate, VersionedId,
 };
 use semver::Version;
 use semver::VersionReq;
@@ -135,78 +135,50 @@ impl SchemaRegistry for SchemaRegistryImpl {
         Ok(Response::new(Empty {}))
     }
 
-    async fn update_schema_name(
+    async fn update_schema_metadata(
         &self,
-        request: Request<SchemaNameUpdate>,
+        request: Request<SchemaMetadataUpdate>,
     ) -> Result<Response<Empty>, Status> {
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.id)?;
 
-        self.db
-            .update_schema_name(schema_id, request.name.clone())?;
-        self.replicate_message(ReplicationEvent::UpdateSchemaName {
-            id: schema_id,
-            new_name: request.name,
-        });
-
-        Ok(Response::new(Empty {}))
-    }
-
-    async fn update_schema_topic(
-        &self,
-        request: Request<SchemaTopicUpdate>,
-    ) -> Result<Response<Empty>, Status> {
-        let request = request.into_inner();
-        let schema_id = parse_uuid(&request.id)?;
-
-        if !self
-            .mq_metadata
-            .topic_exists(&request.topic)
-            .await
-            .map_err(RegistryError::from)?
-        {
-            return Err(RegistryError::NoTopic(request.topic).into());
+        if let Some(topic) = request.topic.as_ref() {
+            if !self
+                .mq_metadata
+                .topic_exists(&topic)
+                .await
+                .map_err(RegistryError::from)?
+            {
+                return Err(RegistryError::NoTopic(topic.clone()).into());
+            }
         }
 
-        self.db
-            .update_schema_topic(schema_id, request.topic.clone())?;
-        self.replicate_message(ReplicationEvent::UpdateSchemaTopic {
+        if let Some(name) = request.name.as_ref() {
+            self.db.update_schema_name(schema_id, name.clone())?;
+        }
+        if let Some(topic) = request.topic.as_ref() {
+            self.db.update_schema_topic(schema_id, topic.clone())?;
+        }
+        if let Some(address) = request.address.as_ref() {
+            self.db
+                .update_schema_query_address(schema_id, address.clone())?;
+        }
+
+        // Previously we were using method `schema_type()` but it has implicit conversion which may hit us in the bottom:
+        // `from_i32().unwrap_or_default()`
+        // Therefore its better to return an error when we expect `1` or `2` but we get `3` than assume that `3` is `1`.
+        if let Some(schema_type) = request.schema_type {
+            let schema_type = rpc::schema_registry::schema_type::Type::from_i32(schema_type)
+                .ok_or(RegistryError::InvalidSchemaType)?;
+            self.db.update_schema_type(schema_id, schema_type.into())?;
+        }
+
+        self.replicate_message(ReplicationEvent::UpdateSchemaMetadata {
             id: schema_id,
-            new_topic: request.topic,
-        });
-
-        Ok(Response::new(Empty {}))
-    }
-
-    async fn update_schema_query_address(
-        &self,
-        request: Request<SchemaQueryAddressUpdate>,
-    ) -> Result<Response<Empty>, Status> {
-        let request = request.into_inner();
-        let schema_id = parse_uuid(&request.id)?;
-
-        self.db
-            .update_schema_query_address(schema_id, request.address.clone())?;
-        self.replicate_message(ReplicationEvent::UpdateSchemaQueryAddress {
-            id: schema_id,
-            new_query_address: request.address,
-        });
-
-        Ok(Response::new(Empty {}))
-    }
-
-    async fn update_schema_type(
-        &self,
-        request: Request<SchemaTypeUpdate>,
-    ) -> Result<Response<Empty>, Status> {
-        let request = request.into_inner();
-        let schema_id = parse_uuid(&request.id)?;
-        let schema_type = request.schema_type();
-
-        self.db.update_schema_type(schema_id, schema_type.into())?;
-        self.replicate_message(ReplicationEvent::UpdateSchemaType {
-            id: schema_id,
-            new_schema_type: schema_type.into(),
+            name: request.name,
+            topic: request.topic,
+            query_address: request.address,
+            schema_type: None,
         });
 
         Ok(Response::new(Empty {}))
@@ -244,7 +216,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
     ) -> Result<Response<rpc::schema_registry::View>, Status> {
         let request = request.into_inner();
         let view_id = parse_uuid(&request.id)?;
-        let view = View {
+        let view = ViewUpdate {
             name: request.name,
             jmespath: request.jmespath,
         };
@@ -275,7 +247,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         }))
     }
 
-    async fn get_schema_info(&self, request: Request<Id>) -> Result<Response<Schema>, Status> {
+    async fn get_schema_metadata(&self, request: Request<Id>) -> Result<Response<Schema>, Status> {
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.id)?;
         let schema = self.db.get_schema(schema_id)?;

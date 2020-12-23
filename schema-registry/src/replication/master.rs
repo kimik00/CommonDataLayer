@@ -44,10 +44,7 @@ fn send_messages_to_kafka(
         ReplicationEvent::AddSchema { id, .. } => id,
         ReplicationEvent::AddSchemaVersion { id, .. } => id,
         ReplicationEvent::AddViewToSchema { schema_id, .. } => schema_id,
-        ReplicationEvent::UpdateSchemaName { id, .. } => id,
-        ReplicationEvent::UpdateSchemaTopic { id, .. } => id,
-        ReplicationEvent::UpdateSchemaType { id, .. } => id,
-        ReplicationEvent::UpdateSchemaQueryAddress { id, .. } => id,
+        ReplicationEvent::UpdateSchemaMetadata { id, .. } => id,
         ReplicationEvent::UpdateView { id, .. } => id,
     };
     let serialized = serde_json::to_string(&event).unwrap();

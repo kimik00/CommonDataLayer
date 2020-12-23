@@ -14,6 +14,13 @@ pub mod storage {
 }
 
 // Helper structures
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ViewUpdate {
+    pub name: Option<String>,
+    pub jmespath: Option<String>,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NewSchema {
     pub name: String,

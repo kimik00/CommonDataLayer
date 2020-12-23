@@ -1,7 +1,7 @@
 use crate::utils::*;
 use rpc::schema_registry::{
-    types::SchemaType, Empty, Id, NewSchema, NewSchemaVersion, SchemaNameUpdate,
-    SchemaQueryAddressUpdate, SchemaTopicUpdate, SchemaTypeUpdate, ValueToValidate, VersionedId,
+    types::SchemaType, Empty, Id, NewSchema, NewSchemaVersion, SchemaMetadataUpdate,
+    ValueToValidate, VersionedId,
 };
 use semver::{Version, VersionReq};
 use serde_json::Value;
@@ -91,9 +91,10 @@ pub async fn set_schema_name(
 ) -> anyhow::Result<()> {
     let mut client = rpc::schema_registry::connect(registry_addr).await?;
     client
-        .update_schema_name(SchemaNameUpdate {
+        .update_schema_metadata(SchemaMetadataUpdate {
             id: schema_id.to_string(),
-            name,
+            name: Some(name),
+            ..Default::default()
         })
         .await?;
 
@@ -107,9 +108,10 @@ pub async fn set_schema_topic(
 ) -> anyhow::Result<()> {
     let mut client = rpc::schema_registry::connect(registry_addr).await?;
     client
-        .update_schema_topic(SchemaTopicUpdate {
+        .update_schema_metadata(SchemaMetadataUpdate {
             id: schema_id.to_string(),
-            topic,
+            topic: Some(topic),
+            ..Default::default()
         })
         .await?;
 
@@ -123,9 +125,10 @@ pub async fn set_schema_query_address(
 ) -> anyhow::Result<()> {
     let mut client = rpc::schema_registry::connect(registry_addr).await?;
     client
-        .update_schema_query_address(SchemaQueryAddressUpdate {
+        .update_schema_metadata(SchemaMetadataUpdate {
             id: schema_id.to_string(),
-            address: query_address,
+            address: Some(query_address),
+            ..Default::default()
         })
         .await?;
 
@@ -139,9 +142,10 @@ pub async fn set_schema_type(
 ) -> anyhow::Result<()> {
     let mut client = rpc::schema_registry::connect(registry_addr).await?;
     client
-        .update_schema_type(SchemaTypeUpdate {
+        .update_schema_metadata(SchemaMetadataUpdate {
             id: schema_id.to_string(),
-            schema_type: schema_type as i32,
+            schema_type: Some(schema_type as i32),
+            ..Default::default()
         })
         .await?;
 

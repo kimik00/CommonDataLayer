@@ -102,6 +102,7 @@ impl QueryMut {
             .map_err(rpc::error::registry_error)?
             .into_inner()
             .id;
+
         Ok(View {
             id: id.parse()?,
             name: new_view.name,
@@ -124,11 +125,7 @@ impl QueryMut {
         .await
         .map_err(rpc::error::registry_error)?;
 
-        Ok(View {
-            id,
-            name,
-            expression,
-        })
+        get_view(&mut conn, id).await
     }
 
     async fn update_schema(
@@ -142,47 +139,20 @@ impl QueryMut {
 
         let UpdateSchema {
             name,
-            query_address,
+            query_address: address,
             topic,
             schema_type,
         } = update;
 
-        if let Some(name) = name {
-            conn.update_schema_name(rpc::schema_registry::SchemaNameUpdate {
-                id: id.to_string(),
-                name,
-            })
-            .await
-            .map_err(rpc::error::registry_error)?;
-        }
-
-        if let Some(address) = query_address {
-            conn.update_schema_query_address(rpc::schema_registry::SchemaQueryAddressUpdate {
-                id: id.to_string(),
-                address,
-            })
-            .await
-            .map_err(rpc::error::registry_error)?;
-        }
-
-        if let Some(topic) = topic {
-            conn.update_schema_topic(rpc::schema_registry::SchemaTopicUpdate {
-                id: id.to_string(),
-                topic,
-            })
-            .await
-            .map_err(rpc::error::registry_error)?;
-        }
-
-        if let Some(schema_type) = schema_type {
-            let schema_type: i32 = schema_type.into();
-            conn.update_schema_type(rpc::schema_registry::SchemaTypeUpdate {
-                id: id.to_string(),
-                schema_type,
-            })
-            .await
-            .map_err(rpc::error::registry_error)?;
-        }
+        conn.update_schema_metadata(rpc::schema_registry::SchemaMetadataUpdate {
+            id: id.to_string(),
+            name,
+            address,
+            topic,
+            schema_type: schema_type.map(i32::from),
+        })
+        .await
+        .map_err(rpc::error::registry_error)?;
 
         get_schema(&mut conn, id).await
     }
@@ -314,26 +284,30 @@ impl Query {
 
     /// Return single view for given id
     async fn view(context: &Context, id: Uuid) -> FieldResult<View> {
-        log::debug!("get view: {:?}", id);
         let mut conn = context.connect_to_registry().await?;
-        let view = conn
-            .get_view(rpc::schema_registry::Id { id: id.to_string() })
-            .await
-            .map_err(rpc::error::registry_error)?
-            .into_inner();
-
-        Ok(View {
-            id,
-            name: view.name,
-            expression: view.jmespath,
-        })
+        get_view(&mut conn, id).await
     }
+}
+
+async fn get_view(conn: &mut SchemaRegistryConn<'_>, id: Uuid) -> FieldResult<View> {
+    log::debug!("get view: {:?}", id);
+    let view = conn
+        .get_view(rpc::schema_registry::Id { id: id.to_string() })
+        .await
+        .map_err(rpc::error::registry_error)?
+        .into_inner();
+
+    Ok(View {
+        id,
+        name: view.name,
+        expression: view.jmespath,
+    })
 }
 
 async fn get_schema(conn: &mut SchemaRegistryConn<'_>, id: Uuid) -> FieldResult<Schema> {
     log::debug!("get schema: {:?}", id);
     let schema = conn
-        .get_schema_info(rpc::schema_registry::Id { id: id.to_string() })
+        .get_schema_metadata(rpc::schema_registry::Id { id: id.to_string() })
         .await
         .map_err(rpc::error::registry_error)?
         .into_inner();

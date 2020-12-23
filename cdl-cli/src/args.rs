@@ -203,9 +203,9 @@ pub enum ViewAction {
         id: Uuid,
         /// The new name of the view.
         #[structopt(short, long)]
-        name: String,
+        name: Option<String>,
         /// The new JMESPath the view will filter data with.
         #[structopt(short, long)]
-        jmespath: String,
+        jmespath: Option<String>,
     },
 }

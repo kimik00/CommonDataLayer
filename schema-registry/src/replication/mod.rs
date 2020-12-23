@@ -1,6 +1,7 @@
 use crate::{
     db::SchemaDb,
     types::storage::vertices::View,
+    types::ViewUpdate,
     types::{NewSchema, NewSchemaVersion},
 };
 use log::info;
@@ -26,21 +27,12 @@ pub enum ReplicationEvent {
         id: Uuid,
         new_version: NewSchemaVersion,
     },
-    UpdateSchemaName {
+    UpdateSchemaMetadata {
         id: Uuid,
-        new_name: String,
-    },
-    UpdateSchemaTopic {
-        id: Uuid,
-        new_topic: String,
-    },
-    UpdateSchemaQueryAddress {
-        id: Uuid,
-        new_query_address: String,
-    },
-    UpdateSchemaType {
-        id: Uuid,
-        new_schema_type: SchemaType,
+        name: Option<String>,
+        topic: Option<String>,
+        query_address: Option<String>,
+        schema_type: Option<SchemaType>,
     },
     AddViewToSchema {
         schema_id: Uuid,
@@ -49,7 +41,7 @@ pub enum ReplicationEvent {
     },
     UpdateView {
         id: Uuid,
-        view: View,
+        view: ViewUpdate,
     },
 }
 

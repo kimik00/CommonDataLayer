@@ -12,6 +12,7 @@ use crate::{
     error::{MalformedError, RegistryError, RegistryResult},
     types::DbExport,
     types::SchemaDefinition,
+    types::ViewUpdate,
 };
 use indradb::{
     Datastore, EdgeQueryExt, RangeVertexQuery, SledDatastore, SpecificEdgeQuery,
@@ -322,11 +323,20 @@ impl<D: Datastore> SchemaDb<D> {
         Ok(view_id)
     }
 
-    pub fn update_view(&self, id: Uuid, view: View) -> RegistryResult<View> {
+    pub fn update_view(&self, id: Uuid, view: ViewUpdate) -> RegistryResult<View> {
         let old_view = self.get_view(id)?;
-        self.validate_view(&view.jmespath)?;
 
-        self.set_vertex_properties(id, &view.to_properties())?;
+        if let Some(jmespath) = view.jmespath.as_ref() {
+            self.validate_view(jmespath)?;
+        }
+
+        if let Some(name) = view.name {
+            self.set_vertex_properties(id, &[(View::NAME, Value::String(name))])?;
+        }
+
+        if let Some(jmespath) = view.jmespath {
+            self.set_vertex_properties(id, &[(View::EXPRESSION, Value::String(jmespath))])?;
+        }
 
         Ok(old_view)
     }

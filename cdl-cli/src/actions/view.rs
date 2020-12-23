@@ -43,8 +43,8 @@ pub async fn add_view_to_schema(
 
 pub async fn update_view(
     view_id: Uuid,
-    name: String,
-    jmespath: String,
+    name: Option<String>,
+    jmespath: Option<String>,
     registry_addr: String,
 ) -> anyhow::Result<()> {
     let mut client = rpc::schema_registry::connect(registry_addr).await?;

@@ -113,12 +113,11 @@ pub struct UpdateSchema {
     pub schema_type: Option<SchemaType>,
 }
 
-// TODO: It should take Option just like `UpdateSchema`
-/// Input object which updates fields in view. All fields are mandatory.
+/// Input object which updates fields in view. All fields are optional, therefore one may update only `name` or `expression` or all of them.
 #[derive(Debug, juniper::GraphQLInputObject)]
 pub struct UpdateView {
     /// The name is not required to be unique among all views (as `id` is the identifier)
-    pub name: String,
+    pub name: Option<String>,
     /// Expression is in JMESPath format, although right now there is no validation
-    pub expression: String,
+    pub expression: Option<String>,
 }

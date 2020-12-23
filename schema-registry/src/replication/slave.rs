@@ -66,23 +66,25 @@ async fn consume_message(
         } => {
             db.add_view_to_schema(schema_id, view, Some(view_id))?;
         }
-        ReplicationEvent::UpdateSchemaName { id, new_name } => {
-            db.update_schema_name(id, new_name)?;
-        }
-        ReplicationEvent::UpdateSchemaTopic { id, new_topic } => {
-            db.update_schema_topic(id, new_topic)?;
-        }
-        ReplicationEvent::UpdateSchemaQueryAddress {
+        ReplicationEvent::UpdateSchemaMetadata {
             id,
-            new_query_address,
+            name,
+            topic,
+            query_address,
+            schema_type,
         } => {
-            db.update_schema_query_address(id, new_query_address)?;
-        }
-        ReplicationEvent::UpdateSchemaType {
-            id,
-            new_schema_type,
-        } => {
-            db.update_schema_type(id, new_schema_type)?;
+            if let Some(name) = name {
+                db.update_schema_name(id, name)?;
+            }
+            if let Some(topic) = topic {
+                db.update_schema_topic(id, topic)?;
+            }
+            if let Some(query_address) = query_address {
+                db.update_schema_query_address(id, query_address)?;
+            }
+            if let Some(schema_type) = schema_type {
+                db.update_schema_type(id, schema_type)?;
+            }
         }
         ReplicationEvent::UpdateView { id, view } => {
             db.update_view(id, view)?;

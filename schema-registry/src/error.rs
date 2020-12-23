@@ -23,6 +23,8 @@ pub enum RegistryError {
     MQError(String),
     #[error("Given schema was invalid")]
     InvalidSchema,
+    #[error("Given schema type is invalid")]
+    InvalidSchemaType,
     #[error("Given view was invalid: {0}")]
     InvalidView(String),
     #[error("No version of schema with id {} matches the given requirement {}", .0.id, .0.version_req)]
@@ -69,6 +71,7 @@ impl From<RegistryError> for Status {
             | RegistryError::NoViewWithId(_) => Status::not_found(error.to_string()),
             RegistryError::NewVersionMustBeGreatest { .. }
             | RegistryError::InvalidSchema
+            | RegistryError::InvalidSchemaType
             | RegistryError::DuplicatedUuid(_)
             | RegistryError::DbError(_)
             | RegistryError::ConnectionError(_)
