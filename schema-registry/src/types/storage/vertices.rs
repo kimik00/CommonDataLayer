@@ -7,7 +7,7 @@ use uuid::Uuid;
 use crate::types::{extract_vertex_property, SchemaType};
 
 pub trait Vertex: Sized {
-    fn to_properties<'a>(self) -> Vec<(&'a str, Value)>;
+    fn into_properties<'a>(self) -> Vec<(&'a str, Value)>;
     fn from_properties(properties: VertexProperties) -> Option<(Uuid, Self)>;
     fn db_type() -> Type;
 }
@@ -48,7 +48,7 @@ impl Vertex for Schema {
         ))
     }
 
-    fn to_properties<'a>(self) -> Vec<(&'a str, Value)> {
+    fn into_properties<'a>(self) -> Vec<(&'a str, Value)> {
         vec![
             (Self::NAME, Value::String(self.name)),
             (Self::TOPIC_NAME, Value::String(self.kafka_topic)),
@@ -84,7 +84,7 @@ impl Vertex for Definition {
         ))
     }
 
-    fn to_properties<'a>(self) -> Vec<(&'a str, Value)> {
+    fn into_properties<'a>(self) -> Vec<(&'a str, Value)> {
         vec![(Definition::VALUE, self.definition)]
     }
 
@@ -115,7 +115,7 @@ impl Vertex for View {
         ))
     }
 
-    fn to_properties<'a>(self) -> Vec<(&'a str, Value)> {
+    fn into_properties<'a>(self) -> Vec<(&'a str, Value)> {
         vec![
             (View::NAME, Value::String(self.name)),
             (View::EXPRESSION, Value::String(self.jmespath)),

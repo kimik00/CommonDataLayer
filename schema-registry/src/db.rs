@@ -41,7 +41,7 @@ impl<D: Datastore> SchemaDb<D> {
         uuid: Option<Uuid>,
     ) -> RegistryResult<Uuid> {
         let conn = self.connect()?;
-        let properties = vertex.to_properties();
+        let properties = vertex.into_properties();
         let new_id = if let Some(uuid) = uuid {
             let vertex = indradb::Vertex {
                 id: uuid,
@@ -312,7 +312,7 @@ impl<D: Datastore> SchemaDb<D> {
         let old_view = self.get_view(id)?;
         self.validate_view(&view.jmespath)?;
 
-        self.set_vertex_properties(id, &view.to_properties())?;
+        self.set_vertex_properties(id, &view.into_properties())?;
 
         Ok(old_view)
     }

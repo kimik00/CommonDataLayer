@@ -42,7 +42,7 @@ impl StorageValue {
     }
 
     fn uuid_from_slice(slice: &[u8]) -> Uuid {
-        let mut bytes = [0 as u8; 16];
+        let mut bytes = [0u8; 16];
         bytes.clone_from_slice(slice);
 
         Uuid::from_bytes(bytes)
