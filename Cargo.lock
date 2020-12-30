@@ -3573,9 +3573,9 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "1.0.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f4bfdcbd00fa893ac0549b38aa27080636a0104b0d0c38475a99439405e1df8"
+checksum = "d258221f566b6c803c7b4714abadc080172b272090cdc5e244a6d4dd13c3a6bd"
 dependencies = [
  "autocfg 1.0.1",
  "libc",
@@ -3601,7 +3601,7 @@ checksum = "4a236324e1e84931e62c22e2ee47688e077aa33a2a95f14d29ab8ec4dbaf9845"
 dependencies = [
  "lapin",
  "parking_lot 0.11.1",
- "tokio 1.0.0",
+ "tokio 1.0.1",
 ]
 
 [[package]]
