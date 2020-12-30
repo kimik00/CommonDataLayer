@@ -63,7 +63,7 @@ Here is the sample JSON schema format that the CDL anticipates and ultimatley wi
 }
 ```
 
-**NOTE**: Schema's can be added via [gRPC][grpc] to the schema registry. Ensure that you have `protoc` installed on your machine you machine generate [proto](./schema-registry/proto) files in a supported language and make requests via a client.
+**NOTE**: Schema's can be added via [gRPC][grpc] to the schema registry. Ensure that you have `protoc` installed on your machine you machine generate [proto][proto] files in a supported language and make requests via a client.
 
 
 ## Insert Data
@@ -132,3 +132,4 @@ See [k8s_local_deployment.md][deployment]
 [schema-registry]: ../schema-registry/README.md
 [query-service]: query_service.md
 [data-router]: data_router.md
+[proto]: ../rpc/proto
